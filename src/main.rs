@@ -272,7 +272,7 @@ impl Application for Calculator {
         };
 
         // 显示计算结果
-        let display = Element::from(
+        let result = Element::from(
             column![
                 text(self.show.clone())
                     .size(28)
@@ -287,7 +287,7 @@ impl Application for Calculator {
         );
 
         // 显示结果板块
-        let result = Element::from(
+        let display = Element::from(
             column![
                 scrollable(
                     column![
@@ -303,7 +303,7 @@ impl Application for Calculator {
                          .margin(0)
                  ).id(SCROLL.clone()),
                 vertical_space(10),
-                display
+                result
             ].width(Length::Fill)
         );
 
@@ -356,7 +356,7 @@ impl Application for Calculator {
         };
 
         column![
-            result,
+            display,
             column![
                 row![
                     func_label("Cot", "cot("), func_label("Coth", "coth"),
