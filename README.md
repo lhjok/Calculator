@@ -22,6 +22,6 @@
 - `cosh` , `sinh` , `tanh` , `sech` , `ln` , `csch` , `acos` , `asin` , `atan` , `frac` , `sgn` , `erf`
 - `acosh` , `asinh` , `atanh` , `exp` , `log` , `logx` , `sqrt` , `cbrt` , `fac` , `recip` , `erfc`
 
-![image](https://github.com/lhjok/Calc-ui/raw/master/assets/calc.png)
+![image](https://github.com/lhjok/Calculator/raw/master/assets/calc.png)
 
 自创的词法解析算法，一次遍历即完成计算。核心代码455行，功能完整且包含错误检查机制。
