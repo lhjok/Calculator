@@ -1,6 +1,7 @@
 use calc::Calc;
 use once_cell::sync::Lazy;
 use iced::executor::Default;
+
 use iced::{
     window,
     alignment::{
@@ -8,25 +9,27 @@ use iced::{
         Horizontal
     }
 };
+
 use iced::{
     Application, Command,
     Element, Settings,
     Alignment, Theme,
     Length, Font, Color
 };
+
 use iced::widget::{
     column, row,
     scrollable,
     button, text,
     vertical_space
 };
+
 use iced::widget::scrollable::{
     Id, Properties,
     RelativeOffset
 };
 
 static SCROLL: Lazy<Id> = Lazy::new(Id::unique);
-
 const CONSOLA: Font = Font::External {
     name: "Consola",
     bytes: include_bytes!("../fonts/consolab.ttf")
@@ -224,7 +227,7 @@ impl Application for Calculator {
                         result: Some((expr, valid))
                     };
                     self.history.push(to_list);
-                    if self.history.len() >= 6{
+                    if self.history.len() >= 6 {
                         self.scroll = RelativeOffset::END;
                         return scrollable::snap_to(
                             SCROLL.clone(),
@@ -238,9 +241,10 @@ impl Application for Calculator {
     }
 
     fn view(&self) -> Element<Message> {
-        // 历史计算结果
+        // 显示单例计算结果
         let list_item = |d: &CalcResult| -> Element<Message> {
             column![
+                vertical_space(2),
                 text(format!("{}=", d.express()))
                     .size(19)
                     .width(Length::Fill)
@@ -254,7 +258,7 @@ impl Application for Calculator {
             ].into()
         };
 
-        // 历史记录列表
+        // 显示历史记录列表
         let history_list = if self.history.len() != 0 {
             self.history.iter().fold(
                 column![],
@@ -271,8 +275,8 @@ impl Application for Calculator {
             ].into()
         };
 
-        // 显示计算结果
-        let result = Element::from(
+        // 显示输入输出结果
+        let result_main = Element::from(
             column![
                 text(self.show.clone())
                     .size(28)
@@ -286,7 +290,7 @@ impl Application for Calculator {
              .padding(11)
         );
 
-        // 显示结果板块
+        // 结果显示板块
         let display = Element::from(
             column![
                 scrollable(
@@ -294,7 +298,7 @@ impl Application for Calculator {
                         history_list
                     ].width(Length::Fill)
                      .align_items(Alignment::Fill)
-                     .padding(11)
+                     .padding([11, 11, 0, 11])
                 ).height(255)
                  .vertical_scroll(
                      Properties::new()
@@ -303,7 +307,7 @@ impl Application for Calculator {
                          .margin(0)
                  ).id(SCROLL.clone()),
                 vertical_space(10),
-                result
+                result_main
             ].width(Length::Fill)
         );
 
