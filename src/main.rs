@@ -268,6 +268,7 @@ impl Application for Calculator {
             )
         } else {
             column![
+                vertical_space(2),
                 text("No calculation history")
                     .size(19)
                     .font(CONSOLA)
