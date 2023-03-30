@@ -207,8 +207,8 @@ impl Application for Calculator {
         String::from("Senior Calculator")
     }
 
-    fn update(&mut self, message: Message) -> Command<Message> {
-        match message {
+    fn update(&mut self, msg: Message) -> Command<Message> {
+        match msg {
             Message::Digit(num) => {
                 self.func_digit_event(num);
                 Command::none()
@@ -220,9 +220,12 @@ impl Application for Calculator {
             Message::Operator(op, lb) => {
                 let expr = self.value.clone();
                 if self.oper_event(&op, lb) {
-                    let valid = if self.show[0..1].parse::<f64>().is_ok() {
-                        self.value.clone()
-                    } else { self.show.clone() };
+                    let valid = if self.show[0..1]
+                        .parse::<f64>().is_ok() {
+                            self.value.clone()
+                        } else {
+                            self.show.clone()
+                        };
                     let to_list = CalcResult {
                         result: Some((expr, valid))
                     };
@@ -327,7 +330,8 @@ impl Application for Calculator {
         };
 
         // 运算符按键板块
-        let oper_label = |op: char, lb: char, sz: u16| -> Element<Message> {
+        let oper_label = |op: char, lb: char, sz: u16|
+            -> Element<Message> {
             let op = String::from(op);
             let lb = String::from(lb);
             let oper = text(op.clone())
