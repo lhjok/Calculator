@@ -14,14 +14,17 @@ use iced::{
     Application, Command,
     Element, Settings,
     Alignment, Theme,
-    Length, Font, Color
+    Length, Font, Color,
+    Background,
+    theme::Container
 };
 
 use iced::widget::{
     column, row,
     scrollable,
     button, text,
-    vertical_space
+    vertical_space,
+    container
 };
 
 use iced::widget::scrollable::{
@@ -279,20 +282,31 @@ impl Application for Calculator {
             ].into()
         };
 
+        // 自定义背景颜色
+        let custom = |_: &Theme| -> container::Appearance {
+            let color = Color::from([0.2, 0.2, 0.2]);
+            container::Appearance {
+                background: Some(Background::Color(color)),
+                ..container::Appearance::default()
+            }
+        } as for<'a> fn(&'a Theme) -> container::Appearance;
+
         // 显示输入输出结果
-        let result_main = Element::from(
+        let result_main = container(
             column![
+                vertical_space(8),
                 text(self.show.clone())
                     .size(28)
-                    .height(50)
+                    .height(52)
                     .font(CONSOLA)
                     .horizontal_alignment(Horizontal::Right)
                     .vertical_alignment(Vertical::Center)
             ].width(Length::Fill)
-             .height(50)
+             .height(60)
              .align_items(Alignment::End)
              .padding(11)
-        );
+        ).width(Length::Fill)
+         .style(Container::from(custom));
 
         // 结果显示板块
         let display = Element::from(
@@ -310,7 +324,6 @@ impl Application for Calculator {
                          .scroller_width(2)
                          .margin(0)
                  ).id(SCROLL.clone()),
-                vertical_space(10),
                 result_main
             ].width(Length::Fill)
         );
