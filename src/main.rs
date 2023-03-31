@@ -435,10 +435,11 @@ impl Application for Calculator {
 pub fn main() -> iced::Result {
     Calculator::run(Settings{
         window: window::Settings {
-            size: (635, 565),
+            max_size: Some((635, 565)),
             resizable: false,
             ..window::Settings::default()
         },
+        antialiasing: true,
         ..Settings::default()
     })
 }
