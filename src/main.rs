@@ -289,7 +289,7 @@ impl Application for Calculator {
                 background: Some(Background::Color(color)),
                 ..container::Appearance::default()
             }
-        } as for<'a> fn(&'a Theme) -> container::Appearance;
+        } as for<'a> fn(&'a _) -> _;
 
         // 显示输入输出结果
         let result_main = container(
