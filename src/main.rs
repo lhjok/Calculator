@@ -435,7 +435,7 @@ impl Application for Calculator {
 pub fn main() -> iced::Result {
     Calculator::run(Settings{
         window: window::Settings {
-            max_size: Some((635, 565)),
+            max_size: Some((638, 565)),
             resizable: false,
             ..window::Settings::default()
         },
