@@ -1,6 +1,7 @@
 use calc::Calc;
 use once_cell::sync::Lazy;
 use iced::executor::Default;
+use textwrap::fill;
 
 use iced::{
     window,
@@ -249,14 +250,16 @@ impl Application for Calculator {
     fn view(&self) -> Element<Message> {
         // 显示单例计算结果
         let list_item = |d: &CalcResult| -> Element<Message> {
+            let wrap_results = fill(&d.result(), 59);
+            let wrap_express = fill(&d.express(), 59);
             column![
                 vertical_space(2),
-                text(format!("{}=", d.express()))
+                text(format!("{}=", wrap_express))
                     .size(19)
                     .width(Length::Fill)
                     .font(CONSOLA),
                 vertical_space(2),
-                text(format!("{}", d.result()))
+                text(format!("{}", wrap_results))
                     .size(19)
                     .width(Length::Fill)
                     .font(CONSOLA)
