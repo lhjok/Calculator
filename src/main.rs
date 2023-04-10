@@ -234,7 +234,7 @@ impl Application for Calculator {
                         result: Some((expr, valid))
                     };
                     self.history.push(to_list);
-                    if self.history.len() >= 6 {
+                    if self.history.len() >= 1 {
                         self.scroll = RelativeOffset::END;
                         return scrollable::snap_to(
                             SCROLL.clone(),
@@ -257,11 +257,13 @@ impl Application for Calculator {
                 text(format!("{}=", wrap_express))
                     .size(19)
                     .width(Length::Fill)
+                    .height(Length::Shrink)
                     .font(CONSOLA),
                 vertical_space(2),
                 text(format!("{}", wrap_results))
                     .size(19)
                     .width(Length::Fill)
+                    .height(Length::Shrink)
                     .font(CONSOLA)
                     .style(Color::from_rgb8(123, 104, 238))
             ].into()
