@@ -197,7 +197,7 @@ impl Application for Calculator {
     type Executor = Default;
     type Theme = Theme;
 
-    fn new(_: Self::Flags) -> (Calculator, Command<Message>) {
+    fn new(_: Self::Flags) -> (Calculator, Command<Self::Message>) {
         (Calculator {
             show: String::from("0"),
             value: String::from("0"),
@@ -211,7 +211,7 @@ impl Application for Calculator {
         String::from("Senior Calculator")
     }
 
-    fn update(&mut self, msg: Message) -> Command<Message> {
+    fn update(&mut self, msg: Self::Message) -> Command<Self::Message> {
         match msg {
             Message::Digit(num) => {
                 self.func_digit_event(num);
@@ -247,9 +247,9 @@ impl Application for Calculator {
         }
     }
 
-    fn view(&self) -> Element<Message> {
+    fn view(&self) -> Element<Self::Message> {
         // 显示单例计算结果
-        let list_item = |d: &CalcResult| -> Element<Message> {
+        let list_item = |d: &CalcResult| -> Element<Self::Message> {
             let wrap_results = fill(&d.result(), 59);
             let wrap_express = fill(&d.express(), 59);
             column![
@@ -334,7 +334,7 @@ impl Application for Calculator {
         );
 
         // 数字按键板块
-        let digit = |num: char| -> Element<Message> {
+        let digit = |num: char| -> Element<Self::Message> {
             let num = String::from(num);
             let digit = text(num.clone())
                 .size(24)
@@ -349,7 +349,7 @@ impl Application for Calculator {
 
         // 运算符按键板块
         let oper_label = |op: char, lb: char, sz: u16|
-            -> Element<Message> {
+            -> Element<Self::Message> {
             let op = String::from(op);
             let lb = String::from(lb);
             let oper = text(op.clone())
@@ -364,12 +364,12 @@ impl Application for Calculator {
         };
 
         // 运算符按键板块
-        let operator = |op: char, sz: u16| -> Element<Message> {
+        let operator = |op: char, sz: u16| -> Element<Self::Message> {
             oper_label(op.clone(), op, sz)
         };
 
         // 数学函数按键板块
-        let func_label = |fun: &str, lb: &str| -> Element<Message> {
+        let func_label = |fun: &str, lb: &str| -> Element<Self::Message> {
             let lb = String::from(lb);
             let func = text(fun)
                 .size(17)
