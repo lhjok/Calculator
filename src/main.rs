@@ -12,12 +12,12 @@ use iced::{
 };
 
 use iced::{
+    theme::Container,
     Application, Command,
     Element, Settings,
     Alignment, Theme,
     Length, Font, Color,
-    Background,
-    theme::Container
+    Background
 };
 
 use iced::widget::{
@@ -28,9 +28,12 @@ use iced::widget::{
     container
 };
 
-use iced::widget::scrollable::{
-    Id, Properties,
-    RelativeOffset
+use iced::widget::{
+    container::Appearance,
+    scrollable::{
+        Id, Properties,
+        RelativeOffset
+    }
 };
 
 static SCROLL: Lazy<Id> = Lazy::new(Id::unique);
@@ -289,11 +292,11 @@ impl Application for Calculator {
 
         // 自定义背景颜色
         let custom: for<'a> fn(&'a _) -> _;
-        custom = |_: &Theme| -> container::Appearance {
+        custom = |_: &Theme| -> Appearance {
             let color = Color::from([0.2, 0.2, 0.2]);
-            container::Appearance {
+            Appearance {
                 background: Some(Background::Color(color)),
-                ..container::Appearance::default()
+                ..Appearance::default()
             }
         };
 
