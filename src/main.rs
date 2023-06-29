@@ -288,13 +288,14 @@ impl Application for Calculator {
         };
 
         // 自定义背景颜色
-        let custom = |_: &Theme| -> container::Appearance {
+        let custom: for<'a> fn(&'a _) -> _;
+        custom = |_: &Theme| -> container::Appearance {
             let color = Color::from([0.2, 0.2, 0.2]);
             container::Appearance {
                 background: Some(Background::Color(color)),
                 ..container::Appearance::default()
             }
-        } as for<'a> fn(&'a _) -> _;
+        };
 
         // 显示输入输出结果
         let result_main = container(
@@ -320,7 +321,7 @@ impl Application for Calculator {
                     column![
                         history_list
                     ].width(Length::Fill)
-                     .align_items(Alignment::Fill)
+                     .align_items(Alignment::Start)
                      .padding([11, 11, 0, 11])
                 ).height(255)
                  .vertical_scroll(
