@@ -1,34 +1,26 @@
 use calc::Calc;
 use once_cell::sync::Lazy;
 use iced::executor::Default;
+use iced::theme::Container;
+use iced::keyboard::KeyCode;
 use textwrap::fill;
 
 use iced::{
-    window,
+    Background, Event,
+    subscription, window, keyboard,
+    Subscription, Element, Settings,
+    Application, Command, Theme,
+    Alignment, Length, Font, Color,
     alignment::{
         Vertical,
         Horizontal
     }
 };
 
-use iced::{
-    theme::Container,
-    Application, Command,
-    Element, Settings,
-    Alignment, Theme,
-    Length, Font, Color,
-    Background
-};
-
 use iced::widget::{
-    column, row,
-    scrollable,
-    button, text,
     vertical_space,
-    container
-};
-
-use iced::widget::{
+    column, row, scrollable,
+    button, text, container,
     container::Appearance,
     scrollable::{
         Id, Properties,
@@ -88,6 +80,49 @@ fn oper_repl(repl: String) -> String {
         .replace("×", "*")
         .replace("π", "P")
         .replace("γ", "E")
+}
+
+fn handle_key(key_code: KeyCode) -> Option<Message> {
+    let backspace = String::from("\u{25C4}");
+    match key_code {
+        KeyCode::Key0 | KeyCode::Numpad0
+            => Some(Message::Digit(String::from("0"))),
+        KeyCode::Key1 | KeyCode::Numpad1
+            => Some(Message::Digit(String::from("1"))),
+        KeyCode::Key2 | KeyCode::Numpad2
+            => Some(Message::Digit(String::from("2"))),
+        KeyCode::Key3 | KeyCode::Numpad3
+            => Some(Message::Digit(String::from("3"))),
+        KeyCode::Key4 | KeyCode::Numpad4
+            => Some(Message::Digit(String::from("4"))),
+        KeyCode::Key5 | KeyCode::Numpad5
+            => Some(Message::Digit(String::from("5"))),
+        KeyCode::Key6 | KeyCode::Numpad6
+            => Some(Message::Digit(String::from("6"))),
+        KeyCode::Key7 | KeyCode::Numpad7
+            => Some(Message::Digit(String::from("7"))),
+        KeyCode::Key8 | KeyCode::Numpad8
+            => Some(Message::Digit(String::from("8"))),
+        KeyCode::Key9 | KeyCode::Numpad9
+            => Some(Message::Digit(String::from("9"))),
+        KeyCode::Period | KeyCode::NumpadDecimal
+            => Some(Message::Digit(String::from("."))),
+        KeyCode::Equals | KeyCode::NumpadEquals
+            => Some(Message::Operator(String::from("="), String::from("="))),
+        KeyCode::Enter | KeyCode::NumpadEnter
+            => Some(Message::Operator(String::from("="), String::from("="))),
+        KeyCode::Plus | KeyCode::NumpadAdd
+            => Some(Message::Operator(String::from("+"), String::from("+"))),
+        KeyCode::Minus | KeyCode::NumpadSubtract
+            => Some(Message::Operator(String::from("-"), String::from("-"))),
+        KeyCode::Asterisk | KeyCode::NumpadMultiply
+            => Some(Message::Operator(String::from("×"), String::from("×"))),
+        KeyCode::Slash | KeyCode::NumpadDivide
+            => Some(Message::Operator(String::from("÷"), String::from("÷"))),
+        KeyCode::Backspace
+            => Some(Message::Operator(backspace.clone(), backspace)),
+        _ => None,
+    }
 }
 
 impl CalcResult {
@@ -434,6 +469,18 @@ impl Application for Calculator {
             ].padding(3)
              .spacing(3)
         ].into()
+    }
+
+    fn subscription(&self) -> Subscription<Self::Message> {
+        subscription::events_with(|event, _| match event {
+            Event::Keyboard(
+                keyboard::Event::KeyPressed {
+                    modifiers: _,
+                    key_code
+                }
+            ) => handle_key(key_code),
+            _ => None
+        })
     }
 
     fn theme(&self) -> Theme {
