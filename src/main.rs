@@ -2,15 +2,16 @@ use calc::Calc;
 use once_cell::sync::Lazy;
 use iced::executor::Default;
 use iced::theme::Container;
+use iced::keyboard;
 use iced::keyboard::KeyCode;
 use textwrap::fill;
 
 use iced::{
-    Background, Event,
-    subscription, window, keyboard,
+    subscription, window,
+    Background, Event, Font,
     Subscription, Element, Settings,
     Application, Command, Theme,
-    Alignment, Length, Font, Color,
+    Alignment, Length, Color,
     alignment::{
         Vertical,
         Horizontal
@@ -26,12 +27,6 @@ use iced::widget::{
         Id, Properties,
         RelativeOffset
     }
-};
-
-static SCROLL: Lazy<Id> = Lazy::new(Id::unique);
-const CONSOLA: Font = Font::External {
-    name: "Consola",
-    bytes: include_bytes!("../fonts/consolab.ttf")
 };
 
 #[derive(Clone)]
@@ -83,47 +78,55 @@ fn oper_repl(repl: String) -> String {
 }
 
 fn handle_key(key_code: KeyCode) -> Option<Message> {
-    let backspace = String::from("\u{25C4}");
+    let operator = |oper: String| -> Message {
+        Message::Operator(oper.clone(), oper)
+    };
     match key_code {
-        KeyCode::Key0 | KeyCode::Numpad0
-            => Some(Message::Digit(String::from("0"))),
-        KeyCode::Key1 | KeyCode::Numpad1
-            => Some(Message::Digit(String::from("1"))),
-        KeyCode::Key2 | KeyCode::Numpad2
-            => Some(Message::Digit(String::from("2"))),
-        KeyCode::Key3 | KeyCode::Numpad3
-            => Some(Message::Digit(String::from("3"))),
-        KeyCode::Key4 | KeyCode::Numpad4
-            => Some(Message::Digit(String::from("4"))),
-        KeyCode::Key5 | KeyCode::Numpad5
-            => Some(Message::Digit(String::from("5"))),
-        KeyCode::Key6 | KeyCode::Numpad6
-            => Some(Message::Digit(String::from("6"))),
-        KeyCode::Key7 | KeyCode::Numpad7
-            => Some(Message::Digit(String::from("7"))),
-        KeyCode::Key8 | KeyCode::Numpad8
-            => Some(Message::Digit(String::from("8"))),
-        KeyCode::Key9 | KeyCode::Numpad9
-            => Some(Message::Digit(String::from("9"))),
-        KeyCode::Period | KeyCode::NumpadDecimal
-            => Some(Message::Digit(String::from("."))),
-        KeyCode::Equals | KeyCode::NumpadEquals
-            => Some(Message::Operator(String::from("="), String::from("="))),
-        KeyCode::Enter | KeyCode::NumpadEnter
-            => Some(Message::Operator(String::from("="), String::from("="))),
-        KeyCode::Plus | KeyCode::NumpadAdd
-            => Some(Message::Operator(String::from("+"), String::from("+"))),
-        KeyCode::Minus | KeyCode::NumpadSubtract
-            => Some(Message::Operator(String::from("-"), String::from("-"))),
-        KeyCode::Asterisk | KeyCode::NumpadMultiply
-            => Some(Message::Operator(String::from("×"), String::from("×"))),
-        KeyCode::Slash | KeyCode::NumpadDivide
-            => Some(Message::Operator(String::from("÷"), String::from("÷"))),
-        KeyCode::Backspace
-            => Some(Message::Operator(backspace.clone(), backspace)),
-        _ => None,
+        KeyCode::Plus | KeyCode::NumpadAdd =>
+            Some(operator(String::from("+"))),
+        KeyCode::Minus | KeyCode::NumpadSubtract =>
+            Some(operator(String::from("-"))),
+        KeyCode::Asterisk | KeyCode::NumpadMultiply =>
+            Some(operator(String::from("×"))),
+        KeyCode::Slash | KeyCode::NumpadDivide =>
+            Some(operator(String::from("÷"))),
+        KeyCode::Key0 | KeyCode::Numpad0 =>
+            Some(Message::Digit(String::from("0"))),
+        KeyCode::Key1 | KeyCode::Numpad1 =>
+            Some(Message::Digit(String::from("1"))),
+        KeyCode::Key2 | KeyCode::Numpad2 =>
+            Some(Message::Digit(String::from("2"))),
+        KeyCode::Key3 | KeyCode::Numpad3 =>
+            Some(Message::Digit(String::from("3"))),
+        KeyCode::Key4 | KeyCode::Numpad4 =>
+            Some(Message::Digit(String::from("4"))),
+        KeyCode::Key5 | KeyCode::Numpad5 =>
+            Some(Message::Digit(String::from("5"))),
+        KeyCode::Key6 | KeyCode::Numpad6 =>
+            Some(Message::Digit(String::from("6"))),
+        KeyCode::Key7 | KeyCode::Numpad7 =>
+            Some(Message::Digit(String::from("7"))),
+        KeyCode::Key8 | KeyCode::Numpad8 =>
+            Some(Message::Digit(String::from("8"))),
+        KeyCode::Key9 | KeyCode::Numpad9 =>
+            Some(Message::Digit(String::from("9"))),
+        KeyCode::Period | KeyCode::NumpadDecimal =>
+            Some(Message::Digit(String::from("."))),
+        KeyCode::Equals | KeyCode::NumpadEquals =>
+            Some(operator(String::from("="))),
+        KeyCode::Enter | KeyCode::NumpadEnter =>
+            Some(operator(String::from("="))),
+        KeyCode::Backspace =>
+            Some(operator(String::from("\u{25C4}"))),
+        _ => None
     }
 }
+
+static SCROLL: Lazy<Id> = Lazy::new(Id::unique);
+const CONSOLA: Font = Font::External {
+    name: "Consola",
+    bytes: include_bytes!("../fonts/consolab.ttf")
+};
 
 impl CalcResult {
     fn express(&self) -> String {
@@ -286,7 +289,6 @@ impl Application for Calculator {
     }
 
     fn view(&self) -> Element<Self::Message> {
-        // 显示单例计算结果
         let list_item = |d: &CalcResult| -> Element<Self::Message> {
             let wrap_results = fill(&d.result(), 59);
             let wrap_express = fill(&d.express(), 59);
@@ -307,7 +309,6 @@ impl Application for Calculator {
             ].into()
         };
 
-        // 显示历史记录列表
         let history_list = if self.history.len() != 0 {
             self.history.iter().fold(
                 column![],
@@ -325,7 +326,6 @@ impl Application for Calculator {
             ].into()
         };
 
-        // 自定义背景颜色
         let custom: for<'a> fn(&'a _) -> _;
         custom = |_: &Theme| -> Appearance {
             let color = Color::from([0.2, 0.2, 0.2]);
@@ -335,7 +335,6 @@ impl Application for Calculator {
             }
         };
 
-        // 显示输入输出结果
         let result_main = container(
             column![
                 vertical_space(8),
@@ -352,7 +351,6 @@ impl Application for Calculator {
         ).width(Length::Fill)
          .style(Container::from(custom));
 
-        // 结果显示板块
         let display = Element::from(
             column![
                 scrollable(
@@ -372,7 +370,6 @@ impl Application for Calculator {
             ].width(Length::Fill)
         );
 
-        // 数字按键板块
         let digit = |num: char| -> Element<Self::Message> {
             let num = String::from(num);
             let digit = text(num.clone())
@@ -386,7 +383,6 @@ impl Application for Calculator {
             Element::from(button)
         };
 
-        // 运算符按键板块
         let oper_label = |op: char, lb: char, sz: u16|
             -> Element<Self::Message> {
             let op = String::from(op);
@@ -402,12 +398,10 @@ impl Application for Calculator {
             Element::from(button)
         };
 
-        // 运算符按键板块
         let operator = |op: char, sz: u16| -> Element<Self::Message> {
             oper_label(op.clone(), op, sz)
         };
 
-        // 数学函数按键板块
         let func_label = |fun: &str, lb: &str| -> Element<Self::Message> {
             let lb = String::from(lb);
             let func = text(fun)
