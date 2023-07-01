@@ -75,14 +75,16 @@ impl Symbol for u8 {
 impl Bignum for Float {
     fn fmod(&self, n: &Float) -> Float {
         let mut m = Float::with_val(2560, self / n);
-        if self < &0.0 { m.ceil_mut() }
-        else { m.floor_mut() };
+        if self < &0.0 {
+            m.ceil_mut()
+        } else { m.floor_mut() };
         Float::with_val(2560, self - &m * n)
     }
 
     fn accuracy(self) -> Result<Float, String> {
         if *MAX < self && *MIN > self {
-            return Err("Beyond Accuracy".to_string()); }
+            return Err("Beyond Accuracy".to_string());
+        }
         Ok(self)
     }
 

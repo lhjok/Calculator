@@ -7,8 +7,8 @@ use iced::keyboard::KeyCode;
 use textwrap::fill;
 
 use iced::{
-    subscription, window,
     Background, Event, Font,
+    subscription, window, theme,
     Subscription, Element, Settings,
     Application, Command, Theme,
     Alignment, Length, Color,
@@ -19,8 +19,8 @@ use iced::{
 };
 
 use iced::widget::{
-    vertical_space,
-    column, row, scrollable,
+    column, row, rule, Rule,
+    vertical_space, scrollable,
     button, text, container,
     container::Appearance,
     scrollable::{
@@ -289,23 +289,43 @@ impl Application for Calculator {
     }
 
     fn view(&self) -> Element<Self::Message> {
+        let custom_rule: for<'a> fn(&'a _) -> _;
+        custom_rule = |_: &Theme| -> rule::Appearance {
+            rule::Appearance {
+                width: 1,
+                radius: 0.0,
+                color: Color::from([0.3, 0.3, 0.3]),
+                fill_mode: rule::FillMode::Full,
+            }
+        };
+
+        let custom_main: for<'a> fn(&'a _) -> _;
+        custom_main = |_: &Theme| -> Appearance {
+            let color = Color::from([0.2, 0.2, 0.2]);
+            Appearance {
+                background: Some(Background::Color(color)),
+                ..Appearance::default()
+            }
+        };
+
         let list_item = |d: &CalcResult| -> Element<Self::Message> {
-            let wrap_results = fill(&d.result(), 59);
-            let wrap_express = fill(&d.express(), 59);
             column![
-                vertical_space(2),
-                text(format!("{}=", wrap_express))
+                Rule::horizontal(1)
+                    .style(theme::Rule::from(custom_rule)),
+                vertical_space(5),
+                text(format!("{}=", fill(&d.express(), 59)))
                     .size(19)
                     .width(Length::Fill)
                     .height(Length::Shrink)
                     .font(CONSOLA),
-                vertical_space(2),
-                text(format!("{}", wrap_results))
+                vertical_space(3),
+                text(format!("{}", fill(&d.result(), 59)))
                     .size(19)
                     .width(Length::Fill)
                     .height(Length::Shrink)
                     .font(CONSOLA)
-                    .style(Color::from_rgb8(123, 104, 238))
+                    .style(Color::from_rgb8(123, 104, 238)),
+                vertical_space(3)
             ].into()
         };
 
@@ -326,15 +346,6 @@ impl Application for Calculator {
             ].into()
         };
 
-        let custom: for<'a> fn(&'a _) -> _;
-        custom = |_: &Theme| -> Appearance {
-            let color = Color::from([0.2, 0.2, 0.2]);
-            Appearance {
-                background: Some(Background::Color(color)),
-                ..Appearance::default()
-            }
-        };
-
         let result_main = container(
             column![
                 vertical_space(8),
@@ -349,7 +360,7 @@ impl Application for Calculator {
              .align_items(Alignment::End)
              .padding(11)
         ).width(Length::Fill)
-         .style(Container::from(custom));
+         .style(Container::from(custom_main));
 
         let display = Element::from(
             column![
@@ -359,7 +370,7 @@ impl Application for Calculator {
                     ].width(Length::Fill)
                      .align_items(Alignment::Start)
                      .padding([11, 11, 0, 11])
-                ).height(255)
+                ).height(250)
                  .vertical_scroll(
                      Properties::new()
                          .width(2)
@@ -485,7 +496,7 @@ impl Application for Calculator {
 pub fn main() -> iced::Result {
     Calculator::run(Settings{
         window: window::Settings {
-            max_size: Some((638, 565)),
+            max_size: Some((638, 570)),
             resizable: false,
             ..window::Settings::default()
         },
