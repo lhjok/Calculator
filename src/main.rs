@@ -308,11 +308,15 @@ impl Application for Calculator {
             }
         };
 
-        let list_item = |d: &CalcResult| -> Element<Self::Message> {
+        let list_item = |d: &CalcResult, i: usize| -> Element<Self::Message> {
             column![
-                Rule::horizontal(1)
-                    .style(theme::Rule::from(custom_rule)),
-                vertical_space(5),
+                if i == 0 { column![
+                    vertical_space(5)
+                ]} else { column![
+                    Rule::horizontal(1)
+                        .style(theme::Rule::from(custom_rule)),
+                    vertical_space(5)
+                ]},
                 text(format!("{}=", fill(&d.express(), 59)))
                     .size(19)
                     .width(Length::Fill)
@@ -330,10 +334,10 @@ impl Application for Calculator {
         };
 
         let history_list = if self.history.len() != 0 {
-            self.history.iter().fold(
+            self.history.iter().enumerate().fold(
                 column![],
-                |column, event| {
-                    column.push(list_item(event))
+                |column, (index, event)| {
+                    column.push(list_item(event, index))
                 }
             )
         } else {
