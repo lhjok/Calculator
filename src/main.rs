@@ -82,6 +82,12 @@ fn handle_key(key_code: KeyCode) -> Option<Message> {
         Message::Operator(oper.clone(), oper)
     };
     match key_code {
+        KeyCode::Delete => 
+            Some(operator(String::from("C"))),
+        KeyCode::LBracket => 
+            Some(operator(String::from("("))),
+        KeyCode::RBracket => 
+            Some(operator(String::from(")"))),
         KeyCode::Plus | KeyCode::NumpadAdd =>
             Some(operator(String::from("+"))),
         KeyCode::Minus | KeyCode::NumpadSubtract =>
@@ -116,6 +122,8 @@ fn handle_key(key_code: KeyCode) -> Option<Message> {
             Some(operator(String::from("="))),
         KeyCode::Enter | KeyCode::NumpadEnter =>
             Some(operator(String::from("="))),
+        KeyCode::Caret =>
+            Some(operator(String::from("\u{039B}"))),
         KeyCode::Backspace =>
             Some(operator(String::from("\u{25C4}"))),
         _ => None
