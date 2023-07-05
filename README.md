@@ -6,7 +6,7 @@
 
 - 保证精度范围(小数后6位零误差)
 - 符号`C`= 清空输入框表达式
-- 符号`🡨`= 清除输入框一个字符
+- 符号`◄`= 清除输入框一个字符
 - 符号`%`= 求模运算符
 - 符号`π`= 圆周率常数
 - 符号`γ`= 欧拉-马歇罗尼常数
@@ -18,10 +18,11 @@
 
 ### 支持的数学函数列表:
 
-- `ai` , `abs` , `cos` , `sin` , `tan` , `csc` , `sec` , `cot` , `coth` , `re` , `ceil` , `floor`
-- `cosh` , `sinh` , `tanh` , `sech` , `ln` , `csch` , `acos` , `asin` , `atan` , `frac` , `sgn` , `erf`
-- `acosh` , `asinh` , `atanh` , `exp` , `log` , `logx` , `sqrt` , `cbrt` , `fac` , `recip` , `erfc`
+- `ai` , `abs` , `cos` , `sin` , `tan` , `csc` , `sec` , `cot` , `coth` , `ceil` , `floor`
+- `cosh` , `sinh` , `tanh` , `sech` , `ln` , `csch` , `acos` , `asin` , `atan` , `frac` , `sgn`
+- `acosh` , `asinh` , `atanh` , `log2` , `log10` , `sqrt` , `cbrt` , `fac` , `recip` , `erfc`
+- `erf` , `li2` , `exp` , `exp2` ,`exp10` , `eint` , `zeta` , `trunc` , `gamma` , `digamma`
 
 ![image](https://github.com/lhjok/Calculator/blob/main/assets/calc.png)
 
-自创的词法解析算法，一次遍历即完成计算。核心代码450行，功能完整且包含错误检查机制。
+自创的词法解析算法，一次遍历即完成计算。核心代码450行，包含错误检查机制且功能完整。

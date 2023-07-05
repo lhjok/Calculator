@@ -267,19 +267,26 @@ impl Other for String {
     fn math(&self, v: Float) -> Result<Float, String> {
         match self.as_str() {
             "ai" => v.ai().accuracy(),
-            "re" => v.li2().accuracy(),
+            "li" => v.li2().accuracy(),
             "erf" => v.erf().accuracy(),
             "erfc" => v.erfc().accuracy(),
             "abs" => v.abs().accuracy(),
             "ln" if v > 0.0 => v.ln().accuracy(),
             "exp" => v.exp().accuracy(),
+            "expt" => v.exp2().accuracy(),
+            "expx" => v.exp10().accuracy(),
+            "trunc" => v.trunc().accuracy(),
+            "zeta" if v != 1.0 => v.zeta().accuracy(),
+            "gamma" if v != 0.0 => v.gamma().accuracy(),
+            "digamma" if v != 0.0 => v.digamma().accuracy(),
+            "eint" if v != 0.0 => v.eint().accuracy(),
             "log" if v > 0.0 => v.log2().accuracy(),
             "logx" if v > 0.0 => v.log10().accuracy(),
             "cos" => v.cos().accuracy(),
             "sin" => v.sin().accuracy(),
             "tan" => v.tan().accuracy(),
-            "csc" if v != 0.0 => v.csc().accuracy(),
             "sec" => v.sec().accuracy(),
+            "csc" if v != 0.0 => v.csc().accuracy(),
             "cot" if v != 0.0 => v.cot().accuracy(),
             "cosh" => v.cosh().accuracy(),
             "sinh" => v.sinh().accuracy(),
@@ -332,9 +339,10 @@ impl Calc {
         let num = &self.numbers;
         let ope = &self.operator;
         let expr = &self.expression;
-        let math = ["abs","atan","cos","sin","tan","csc","sec","cot","coth","ceil","floor",
-            "cosh","sinh","tanh","sech","ln","csch","acos","fac","frac","sgn","ai","re","erf",
-            "acosh","asinh","atanh","exp","log","logx","sqrt","cbrt","recip","asin","erfc"];
+        let math = ["abs","atan","cos","sin","tan","csc","sec","cot","coth","ceil",
+        "floor","eint","trunc","cosh","sinh","tanh","sech","ln","csch","acos","fac",
+        "frac","sgn","ai","erf","gamma","digamma","acosh","asinh","atanh","recip",
+        "log","logx","li","sqrt","cbrt","asin","erfc","exp","expt","expx","zeta"];
         let mut mark: u8 = b'I'; // I = Init, C = Char, N = Number, F = Func, P = Pi
         let mut locat: usize = 0;
         let mut bracket: u32 = 0;

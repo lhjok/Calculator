@@ -63,8 +63,8 @@ fn trunc(lens: String) -> String {
         .map(|x| x.to_string())
         .collect::<Vec<_>>();
 
-    if valid.len() > 41 {
-        valid[valid.len()-41..].concat()
+    if valid.len() > 45 {
+        valid[valid.len()-45..].concat()
     } else {
         valid.concat()
     }
@@ -325,14 +325,14 @@ impl Application for Calculator {
                         .style(theme::Rule::from(custom_rule)),
                     vertical_space(5)
                 ]},
-                text(format!("{}=", fill(&d.express(), 59)))
-                    .size(19)
+                text(format!("{}=", fill(&d.express(), 63)))
+                    .size(20)
                     .width(Length::Fill)
                     .height(Length::Shrink)
                     .font(CONSOLA),
                 vertical_space(3),
-                text(format!("{}", fill(&d.result(), 59)))
-                    .size(19)
+                text(format!("{}", fill(&d.result(), 63)))
+                    .size(20)
                     .width(Length::Fill)
                     .height(Length::Shrink)
                     .font(CONSOLA)
@@ -382,7 +382,7 @@ impl Application for Calculator {
                     ].width(Length::Fill)
                      .align_items(Alignment::Start)
                      .padding([11, 11, 0, 11])
-                ).height(250)
+                ).height(260)
                  .vertical_scroll(
                      Properties::new()
                          .width(2)
@@ -444,44 +444,46 @@ impl Application for Calculator {
                 row![
                     func_label("Cot", "cot("), func_label("Coth", "coth"),
                     func_label("Ai", "ai("), func_label("Cbrt", "cbrt("),
-                    func_label("Re", "re("), func_label("Erfc", "erfc("),
+                    func_label("Li2", "li("), func_label("Erfc", "erfc("),
                     func_label("Sec", "sec("), func_label("Csc", "csc("),
-                    func_label("Csch", "csch(")
+                    func_label("Csch", "csch("),func_label("Eint", "eint("),
+                    func_label("Trunc", "trunc("),
                 ].height(33).spacing(3),
                 row![
                     func_label("Recip", "recip("), func_label("Erf", "erf("),
                     func_label("Acosh", "acosh("), func_label("Sgn", "sgn("),
                     func_label("Asinh", "asinh("), func_label("Frac", "frac("),
                     func_label("Atanh", "atanh("), func_label("Sech", "sech("),
-                    func_label("Ceil", "ceil("), func_label("Floor", "floor(")
+                    func_label("Ceil", "ceil("), func_label("Floor", "floor("),
+                    func_label("Zeta", "zeta("),
                 ].height(35).spacing(3),
                 row![
                     digit('7'), digit('8'), digit('9'),
                     operator('÷', 26), operator('\u{25C4}', 27),
                     operator('C', 24), func_label("Cos", "cos("),
                     func_label("Sin", "sin("), func_label("Tan", "tan("),
-                    func_label("Acos", "acos(")
+                    func_label("Acos", "acos("), func_label("Gamma", "gamma("),
                 ].height(Length::Fill).spacing(3),
                 row![
                     digit('4'), digit('5'), digit('6'),
                     operator('×', 26), operator('(', 24),
                     operator(')', 24), func_label("Cosh", "cosh("),
                     func_label("Sinh", "sinh("), func_label("Tanh", "tanh("),
-                    func_label("Atan", "atan(")
+                    func_label("Atan", "atan("), func_label("DiGam", "digamma("),
                 ].height(Length::Fill).spacing(3),
                 row![
                     digit('1'), digit('2'), digit('3'),
                     oper_label('−', '-', 26), operator('π', 24),
                     oper_label('\u{039B}', '^', 21), func_label("Sqrt", "sqrt("),
-                    func_label("Log", "log("), func_label("Logx", "logx("),
-                    func_label("Asin", "asin(")
+                    func_label("Log2", "log("), func_label("Log10", "logx("),
+                    func_label("Asin", "asin("), func_label("Exp10", "expx("),
                 ].height(Length::Fill).spacing(3),
                 row![
                     operator('%', 24), digit('0'), operator('.', 24),
                     operator('+', 26), operator('γ', 23),
                     operator('=', 25), func_label("Fac", "fac("),
                     func_label("Abs", "abs("), func_label("Ln", "ln("),
-                    func_label("Exp", "exp(")
+                    func_label("Exp", "exp("), func_label("Exp2", "expt("),
                 ].height(Length::Fill).spacing(3),
             ].padding(3)
              .spacing(3)
@@ -508,7 +510,7 @@ impl Application for Calculator {
 pub fn main() -> iced::Result {
     Calculator::run(Settings{
         window: window::Settings {
-            max_size: Some((638, 570)),
+            max_size: Some((715, 582)),
             resizable: false,
             ..window::Settings::default()
         },
