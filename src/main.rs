@@ -1,7 +1,6 @@
 use calc::Calc;
 use once_cell::sync::Lazy;
 use iced::executor::Default;
-use iced::theme::Container;
 use textwrap::fill;
 
 use iced::{
@@ -9,11 +8,13 @@ use iced::{
         self, KeyCode,
         Modifiers
     },
-    Background, Event, Font,
-    subscription, window, theme,
-    Subscription, Element, Settings,
-    Application, Command, Theme,
-    Alignment, Length, Color,
+    subscription, window,
+    Background, Font, Settings,
+    Subscription, Element, Theme,
+    Application, Command, Color,
+    Alignment, Length,
+    event::{ Event, Status },
+    theme::{ self, Container },
     alignment::{
         Horizontal,
         Vertical
@@ -21,9 +22,9 @@ use iced::{
 };
 
 use iced::widget::{
-    column, row, rule, Rule,
+    column, row, rule, text,
     vertical_space, scrollable,
-    button, text, container,
+    button, container, Rule,
     container::Appearance,
     scrollable::{
         Id, Properties,
@@ -502,14 +503,19 @@ impl Application for Calculator {
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
-        subscription::events_with(|event, _| match event {
-            Event::Keyboard(
-                keyboard::Event::KeyPressed {
-                    modifiers,
-                    key_code
-                }
-            ) => handle_key(key_code, modifiers),
-            _ => None
+        subscription::events_with(|event, status| {
+            if let Status::Captured = status {
+                return None;
+            }
+            match event {
+                Event::Keyboard(
+                    keyboard::Event::KeyPressed {
+                        modifiers,
+                        key_code
+                    }
+                ) => handle_key(key_code, modifiers),
+                _ => None
+            }
         })
     }
 
