@@ -2,19 +2,21 @@ use calc::Calc;
 use once_cell::sync::Lazy;
 use iced::executor::Default;
 use iced::theme::Container;
-use iced::keyboard;
-use iced::keyboard::KeyCode;
 use textwrap::fill;
 
 use iced::{
+    keyboard::{
+        self, KeyCode,
+        Modifiers
+    },
     Background, Event, Font,
     subscription, window, theme,
     Subscription, Element, Settings,
     Application, Command, Theme,
     Alignment, Length, Color,
     alignment::{
-        Vertical,
-        Horizontal
+        Horizontal,
+        Vertical
     }
 };
 
@@ -77,16 +79,19 @@ fn oper_repl(repl: String) -> String {
         .replace("γ", "E")
 }
 
-fn handle_key(key_code: KeyCode) -> Option<Message> {
+fn handle_key(key: KeyCode, modi: Modifiers)
+    -> Option<Message> {
     let operator = |oper: String| -> Message {
         Message::Operator(oper.clone(), oper)
     };
-    match key_code {
-        KeyCode::Delete => 
-            Some(operator(String::from("C"))),
-        KeyCode::LBracket => 
+
+    match key {
+        KeyCode::Delete => if modi.control() {
+            Some(operator(String::from("D")))
+        } else { Some(operator(String::from("C"))) },
+        KeyCode::LBracket =>
             Some(operator(String::from("("))),
-        KeyCode::RBracket => 
+        KeyCode::RBracket =>
             Some(operator(String::from(")"))),
         KeyCode::Plus | KeyCode::NumpadAdd =>
             Some(operator(String::from("+"))),
@@ -153,6 +158,7 @@ impl CalcResult {
 impl Calculator {
     fn oper_event(&mut self, op: &str, label: String) -> bool {
         match op {
+            "D" => self.history = Vec::new(),
             "C" => {
                 self.value = String::from("0");
                 self.show = String::from("0");
@@ -246,7 +252,8 @@ impl Application for Calculator {
     type Executor = Default;
     type Theme = Theme;
 
-    fn new(_: Self::Flags) -> (Calculator, Command<Self::Message>) {
+    fn new(_: Self::Flags) ->
+        (Calculator, Command<Self::Message>) {
         (Calculator {
             show: String::from("0"),
             value: String::from("0"),
@@ -260,7 +267,8 @@ impl Application for Calculator {
         String::from("Senior Calculator")
     }
 
-    fn update(&mut self, msg: Self::Message) -> Command<Self::Message> {
+    fn update(&mut self, msg: Self::Message) 
+        -> Command<Self::Message> {
         match msg {
             Message::Digit(num) => {
                 self.func_digit_event(num);
@@ -316,7 +324,8 @@ impl Application for Calculator {
             }
         };
 
-        let list_item = |d: &CalcResult, i: usize| -> Element<Self::Message> {
+        let list_item = |d: &CalcResult, i: usize|
+            -> Element<Self::Message> {
             column![
                 if i == 0 { column![
                     vertical_space(5)
@@ -421,11 +430,13 @@ impl Application for Calculator {
             Element::from(button)
         };
 
-        let operator = |op: char, sz: u16| -> Element<Self::Message> {
+        let operator = |op: char, sz: u16|
+            -> Element<Self::Message> {
             oper_label(op.clone(), op, sz)
         };
 
-        let func_label = |fun: &str, lb: &str| -> Element<Self::Message> {
+        let func_label = |fun: &str, lb: &str|
+            -> Element<Self::Message> {
             let lb = String::from(lb);
             let func = text(fun)
                 .size(17)
@@ -494,10 +505,10 @@ impl Application for Calculator {
         subscription::events_with(|event, _| match event {
             Event::Keyboard(
                 keyboard::Event::KeyPressed {
-                    modifiers: _,
+                    modifiers,
                     key_code
                 }
-            ) => handle_key(key_code),
+            ) => handle_key(key_code, modifiers),
             _ => None
         })
     }
