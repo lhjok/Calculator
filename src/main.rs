@@ -87,6 +87,10 @@ fn handle_key(key: KeyCode, modi: Modifiers)
     };
 
     match key {
+        KeyCode::P if modi.control() =>
+            Some(operator(String::from("π"))),
+        KeyCode::Y if modi.control() =>
+            Some(operator(String::from("γ"))),
         KeyCode::Delete => if modi.control() {
             Some(operator(String::from("D")))
         } else { Some(operator(String::from("C"))) },
@@ -103,7 +107,9 @@ fn handle_key(key: KeyCode, modi: Modifiers)
         KeyCode::Slash | KeyCode::NumpadDivide =>
             Some(operator(String::from("÷"))),
         KeyCode::Key0 | KeyCode::Numpad0 =>
-            Some(Message::Digit(String::from("0"))),
+            if modi.control() {
+                Some(Message::Digit(String::from(")")))
+            } else { Some(Message::Digit(String::from("0"))) },
         KeyCode::Key1 | KeyCode::Numpad1 =>
             Some(Message::Digit(String::from("1"))),
         KeyCode::Key2 | KeyCode::Numpad2 =>
@@ -113,23 +119,27 @@ fn handle_key(key: KeyCode, modi: Modifiers)
         KeyCode::Key4 | KeyCode::Numpad4 =>
             Some(Message::Digit(String::from("4"))),
         KeyCode::Key5 | KeyCode::Numpad5 =>
-            Some(Message::Digit(String::from("5"))),
+            if modi.control() {
+                Some(Message::Digit(String::from("%")))
+            } else { Some(Message::Digit(String::from("5"))) },
         KeyCode::Key6 | KeyCode::Numpad6 =>
-            Some(Message::Digit(String::from("6"))),
+            if modi.control() {
+                Some(Message::Digit(String::from("^")))
+            } else { Some(Message::Digit(String::from("6"))) },
         KeyCode::Key7 | KeyCode::Numpad7 =>
             Some(Message::Digit(String::from("7"))),
         KeyCode::Key8 | KeyCode::Numpad8 =>
             Some(Message::Digit(String::from("8"))),
         KeyCode::Key9 | KeyCode::Numpad9 =>
-            Some(Message::Digit(String::from("9"))),
+            if modi.control() {
+                Some(Message::Digit(String::from("(")))
+            } else { Some(Message::Digit(String::from("9"))) },
         KeyCode::Period | KeyCode::NumpadDecimal =>
             Some(Message::Digit(String::from("."))),
         KeyCode::Equals | KeyCode::NumpadEquals =>
             Some(operator(String::from("="))),
         KeyCode::Enter | KeyCode::NumpadEnter =>
             Some(operator(String::from("="))),
-        KeyCode::Caret =>
-            Some(operator(String::from("\u{039B}"))),
         KeyCode::Backspace =>
             Some(operator(String::from("\u{25C4}"))),
         _ => None
@@ -165,7 +175,8 @@ impl Calculator {
                 self.show = String::from("0");
             },
             "\u{25C4}" => {
-                if self.value.len() == 1 {
+                if self.value.len() == 1 ||
+                    self.value == "π" || self.value == "γ" {
                     self.value = String::from("0");
                     self.show = String::from("0");
                 } else {
