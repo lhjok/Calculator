@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=计算器
+GenericName=计算器
+Comment[zh_CN]=计算器
+Exec=/var/opt/calc/calc %F
+StartupWMClass=Calculator
+Terminal=false
+Type=Application
+Icon=/var/opt/calc/calculator.png

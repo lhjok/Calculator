@@ -400,11 +400,10 @@ impl Application for Calculator {
         let display = Element::from(
             column![
                 scrollable(
-                    column![
-                        history_list
-                    ].width(Length::Fill)
-                     .align_items(Alignment::Start)
-                     .padding([11, 11, 0, 11])
+                    column![history_list]
+                        .width(Length::Fill)
+                        .align_items(Alignment::Start)
+                        .padding([11, 11, 0, 11])
                 ).height(260)
                  .vertical_scroll(
                      Properties::new()
@@ -539,6 +538,7 @@ impl Application for Calculator {
 
 pub fn main() -> iced::Result {
     Calculator::run(Settings{
+        id: Some("Calculator".to_string()),
         window: window::Settings {
             max_size: Some((715, 582)),
             resizable: false,
