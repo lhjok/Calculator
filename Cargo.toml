@@ -15,3 +15,4 @@ features = ["float"]
 
 [dependencies.iced]
 version = "0.9"
+features = ["image"]

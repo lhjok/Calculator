@@ -2,19 +2,21 @@ use calc::Calc;
 use once_cell::sync::Lazy;
 use iced::executor::Default;
 use textwrap::fill;
+use std::path::Path;
 
 use iced::{
     keyboard::{
         self, KeyCode,
         Modifiers
     },
-    subscription, window,
+    subscription,
     Background, Font, Settings,
     Subscription, Element, Theme,
     Application, Command, Color,
     Alignment, Length,
     event::{ Event, Status },
     theme::{ self, Container },
+    window::{ self, icon },
     alignment::{
         Horizontal,
         Vertical
@@ -540,6 +542,9 @@ pub fn main() -> iced::Result {
         window: window::Settings {
             max_size: Some((715, 582)),
             resizable: false,
+            icon: Some(icon::from_file(
+                Path::new("./assets/calculator.png"),
+            ).unwrap()),
             ..window::Settings::default()
         },
         antialiasing: true,
