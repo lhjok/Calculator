@@ -2,7 +2,6 @@ use calc::Calc;
 use once_cell::sync::Lazy;
 use iced::executor::Default;
 use textwrap::fill;
-use std::path::Path;
 
 use iced::{
     keyboard::{
@@ -149,6 +148,7 @@ fn handle_key(key: KeyCode, modi: Modifiers)
 }
 
 static SCROLL: Lazy<Id> = Lazy::new(Id::unique);
+const ICON: &[u8] = include_bytes!("../assets/calculator.png");
 const CONSOLA: Font = Font::External {
     name: "Consola",
     bytes: include_bytes!("../fonts/consolab.ttf")
@@ -542,9 +542,9 @@ pub fn main() -> iced::Result {
         window: window::Settings {
             max_size: Some((715, 582)),
             resizable: false,
-            icon: Some(icon::from_file(
-                Path::new("./assets/calculator.png"),
-            ).unwrap()),
+            icon: Some(icon::from_file_data(
+                ICON, None
+            ).expect("Failed to load icon")),
             ..window::Settings::default()
         },
         antialiasing: true,
