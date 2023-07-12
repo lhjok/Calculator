@@ -305,6 +305,9 @@ impl Application for Calculator {
                         result: Some((expr, valid))
                     };
                     self.history.push(to_list);
+                    if self.history.len() > 30 {
+                        self.history.remove(0);
+                    }
                     if self.history.len() >= 1 {
                         self.scroll = RelativeOffset::END;
                         return scrollable::snap_to(
