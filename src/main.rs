@@ -289,7 +289,7 @@ impl Application for Calculator {
     }
 
     fn title(&self) -> String {
-        String::from("Senior Calculator")
+        String::from("Advanced Calculator")
     }
 
     fn update(&mut self, msg: Self::Message) 
