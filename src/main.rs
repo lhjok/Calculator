@@ -12,7 +12,7 @@ use iced::{
     Background, Font, Settings,
     Subscription, Element, Theme,
     Application, Command, Color,
-    Alignment, Length,
+    Alignment, Length, Pixels,
     font::{ Weight, Family },
     event::{ Event, Status },
     theme::{ self, Container },
@@ -367,14 +367,14 @@ impl Application for Calculator {
                     .width(Length::Fill)
                     .height(Length::Shrink)
                     .font(CONSOLA_NORMAL)
-                    .line_height(LineHeight::Relative(1.1)),
+                    .line_height(LineHeight::Absolute(Pixels(23.0))),
                 text(format!("{}", fill(&d.result(), 60)))
                     .size(21)
                     .width(Length::Fill)
                     .height(Length::Shrink)
                     .font(CONSOLA_BOLD)
                     .style(Color::from_rgb8(123, 104, 238))
-                    .line_height(LineHeight::Relative(1.1)),
+                    .line_height(LineHeight::Absolute(Pixels(23.0))),
                 vertical_space(3)
             ].into()
         };
@@ -418,7 +418,7 @@ impl Application for Calculator {
                         .width(Length::Fill)
                         .align_items(Alignment::Start)
                         .padding([11, 11, 0, 11])
-                ).height(275)
+                ).height(274)
                  .direction(Direction::Vertical(
                      Properties::new()
                          .width(2)
@@ -557,7 +557,7 @@ pub fn main() -> iced::Result {
     Calculator::run(Settings{
         id: Some("Calculator".to_string()),
         window: window::Settings {
-            max_size: Some((715, 608)),
+            max_size: Some((715, 607)),
             resizable: false,
             icon: Some(icon::from_file_data(
                 ICON, None
