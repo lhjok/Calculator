@@ -13,6 +13,7 @@ use iced::{
     Subscription, Element, Theme,
     Application, Command, Color,
     Alignment, Length,
+    font::{ Weight, Family },
     event::{ Event, Status },
     theme::{ self, Container },
     window::{ self, icon },
@@ -26,10 +27,11 @@ use iced::widget::{
     column, row, rule, text,
     vertical_space, scrollable,
     button, container, Rule,
+    text::LineHeight,
     container::Appearance,
     scrollable::{
         Id, Properties,
-        RelativeOffset
+        Direction, RelativeOffset
     }
 };
 
@@ -149,9 +151,18 @@ fn handle_key(key: KeyCode, modi: Modifiers)
 
 static SCROLL: Lazy<Id> = Lazy::new(Id::unique);
 const ICON: &[u8] = include_bytes!("../assets/calculator.png");
-const CONSOLA: Font = Font::External {
-    name: "Consola",
-    bytes: include_bytes!("../fonts/consolab.ttf")
+
+const CONSOLA_NORMAL: Font = Font {
+    family: Family::Name("Consolas"),
+    monospaced: true,
+    ..Font::DEFAULT
+};
+
+const CONSOLA_BOLD: Font = Font {
+    family: Family::Name("Consolas"),
+    weight: Weight::Bold,
+    monospaced: true,
+    ..Font::DEFAULT
 };
 
 impl CalcResult {
@@ -326,7 +337,7 @@ impl Application for Calculator {
         custom_rule = |_: &Theme| -> rule::Appearance {
             rule::Appearance {
                 width: 1,
-                radius: 0.0,
+                radius: 0.0.into(),
                 color: Color::from([0.3, 0.3, 0.3]),
                 fill_mode: rule::FillMode::Full,
             }
@@ -351,18 +362,19 @@ impl Application for Calculator {
                         .style(theme::Rule::from(custom_rule)),
                     vertical_space(5)
                 ]},
-                text(format!("{}=", fill(&d.express(), 63)))
-                    .size(20)
+                text(format!("{}=", fill(&d.express(), 60)))
+                    .size(21)
                     .width(Length::Fill)
                     .height(Length::Shrink)
-                    .font(CONSOLA),
-                vertical_space(3),
-                text(format!("{}", fill(&d.result(), 63)))
-                    .size(20)
+                    .font(CONSOLA_NORMAL)
+                    .line_height(LineHeight::Relative(1.1)),
+                text(format!("{}", fill(&d.result(), 60)))
+                    .size(21)
                     .width(Length::Fill)
                     .height(Length::Shrink)
-                    .font(CONSOLA)
-                    .style(Color::from_rgb8(123, 104, 238)),
+                    .font(CONSOLA_BOLD)
+                    .style(Color::from_rgb8(123, 104, 238))
+                    .line_height(LineHeight::Relative(1.1)),
                 vertical_space(3)
             ].into()
         };
@@ -379,24 +391,23 @@ impl Application for Calculator {
                 vertical_space(2),
                 text("No calculation history")
                     .size(19)
-                    .font(CONSOLA)
+                    .font(CONSOLA_BOLD)
                     .style(Color::from([0.35, 0.35, 0.35]))
             ].into()
         };
 
         let result_main = container(
             column![
-                vertical_space(8),
                 text(self.show.clone())
                     .size(28)
-                    .height(52)
-                    .font(CONSOLA)
+                    .height(Length::Shrink)
+                    .font(CONSOLA_BOLD)
                     .horizontal_alignment(Horizontal::Right)
                     .vertical_alignment(Vertical::Center)
             ].width(Length::Fill)
              .height(60)
              .align_items(Alignment::End)
-             .padding(11)
+             .padding([17, 11, 11, 11])
         ).width(Length::Fill)
          .style(Container::from(custom_main));
 
@@ -407,13 +418,13 @@ impl Application for Calculator {
                         .width(Length::Fill)
                         .align_items(Alignment::Start)
                         .padding([11, 11, 0, 11])
-                ).height(260)
-                 .vertical_scroll(
+                ).height(275)
+                 .direction(Direction::Vertical(
                      Properties::new()
                          .width(2)
                          .scroller_width(2)
                          .margin(0)
-                 ).id(SCROLL.clone()),
+                 )).id(SCROLL.clone()),
                 result_main
             ].width(Length::Fill)
         );
@@ -422,33 +433,35 @@ impl Application for Calculator {
             let num = String::from(num);
             let digit = text(num.clone())
                 .size(24)
-                .font(CONSOLA)
+                .font(CONSOLA_BOLD)
                 .horizontal_alignment(Horizontal::Center)
                 .vertical_alignment(Vertical::Center);
             let button = button(digit)
                 .width(Length::Fill)
-                .on_press(Message::Digit(num));
+                .on_press(Message::Digit(num))
+                .padding([4, 0, 0, 0]);
             Element::from(button)
         };
 
-        let oper_label = |op: char, lb: char, sz: u16|
+        let oper_label = |op: char, lb: char, sz: u16, pd: u16|
             -> Element<Self::Message> {
             let op = String::from(op);
             let lb = String::from(lb);
             let oper = text(op.clone())
                 .size(sz)
-                .font(CONSOLA)
+                .font(CONSOLA_BOLD)
                 .horizontal_alignment(Horizontal::Center)
                 .vertical_alignment(Vertical::Center);
             let button = button(oper)
                 .width(Length::Fill)
-                .on_press(Message::Operator(op, lb));
+                .on_press(Message::Operator(op, lb))
+                .padding([pd, 0, 0, 0]);
             Element::from(button)
         };
 
-        let operator = |op: char, sz: u16|
+        let operator = |op: char, sz: u16, pd: u16|
             -> Element<Self::Message> {
-            oper_label(op.clone(), op, sz)
+            oper_label(op.clone(), op, sz, pd)
         };
 
         let func_label = |fun: &str, lb: &str|
@@ -456,12 +469,13 @@ impl Application for Calculator {
             let lb = String::from(lb);
             let func = text(fun)
                 .size(17)
-                .font(CONSOLA)
+                .font(CONSOLA_BOLD)
                 .horizontal_alignment(Horizontal::Center)
                 .vertical_alignment(Vertical::Center);
             let button = button(func)
                 .width(Length::Fill)
-                .on_press(Message::Func(lb));
+                .on_press(Message::Func(lb))
+                .padding([3, 0, 0, 0]);
             Element::from(button)
         };
 
@@ -475,7 +489,7 @@ impl Application for Calculator {
                     func_label("Sec", "sec("), func_label("Csc", "csc("),
                     func_label("Csch", "csch("),func_label("Eint", "eint("),
                     func_label("Trunc", "trunc("),
-                ].height(33).spacing(3),
+                ].height(36).spacing(3),
                 row![
                     func_label("Recip", "recip("), func_label("Erf", "erf("),
                     func_label("Acosh", "acosh("), func_label("Sgn", "sgn("),
@@ -483,32 +497,32 @@ impl Application for Calculator {
                     func_label("Atanh", "atanh("), func_label("Sech", "sech("),
                     func_label("Ceil", "ceil("), func_label("Floor", "floor("),
                     func_label("Zeta", "zeta("),
-                ].height(35).spacing(3),
+                ].height(36).spacing(3),
                 row![
                     digit('7'), digit('8'), digit('9'),
-                    operator('÷', 26), operator('\u{25C4}', 27),
-                    operator('C', 24), func_label("Cos", "cos("),
+                    operator('÷', 26, 3), operator('\u{25C4}', 27, 3),
+                    operator('C', 24, 3), func_label("Cos", "cos("),
                     func_label("Sin", "sin("), func_label("Tan", "tan("),
                     func_label("Acos", "acos("), func_label("Gamma", "gamma("),
                 ].height(Length::Fill).spacing(3),
                 row![
                     digit('4'), digit('5'), digit('6'),
-                    operator('×', 26), operator('(', 24),
-                    operator(')', 24), func_label("Cosh", "cosh("),
+                    operator('×', 26, 3), operator('(', 24, 3),
+                    operator(')', 24, 3), func_label("Cosh", "cosh("),
                     func_label("Sinh", "sinh("), func_label("Tanh", "tanh("),
                     func_label("Atan", "atan("), func_label("DiGam", "digamma("),
                 ].height(Length::Fill).spacing(3),
                 row![
                     digit('1'), digit('2'), digit('3'),
-                    oper_label('−', '-', 26), operator('π', 24),
-                    oper_label('\u{039B}', '^', 21), func_label("Sqrt", "sqrt("),
+                    oper_label('−', '-', 26, 3), operator('π', 24, 3),
+                    oper_label('\u{039B}', '^', 21, 3), func_label("Sqrt", "sqrt("),
                     func_label("Log2", "log("), func_label("Log10", "logx("),
                     func_label("Asin", "asin("), func_label("Exp10", "expx("),
                 ].height(Length::Fill).spacing(3),
                 row![
-                    operator('%', 24), digit('0'), operator('.', 24),
-                    operator('+', 26), operator('γ', 23),
-                    operator('=', 25), func_label("Fac", "fac("),
+                    operator('%', 24, 5), digit('0'), operator('.', 24, 3),
+                    operator('+', 26, 3), operator('γ', 23, 0),
+                    operator('=', 25, 3), func_label("Fac", "fac("),
                     func_label("Abs", "abs("), func_label("Ln", "ln("),
                     func_label("Exp", "exp("), func_label("Exp2", "expt("),
                 ].height(Length::Fill).spacing(3),
@@ -543,7 +557,7 @@ pub fn main() -> iced::Result {
     Calculator::run(Settings{
         id: Some("Calculator".to_string()),
         window: window::Settings {
-            max_size: Some((715, 582)),
+            max_size: Some((715, 608)),
             resizable: false,
             icon: Some(icon::from_file_data(
                 ICON, None
