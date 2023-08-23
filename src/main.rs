@@ -520,7 +520,7 @@ impl Application for Calculator {
                     func_label("Asin", "asin("), func_label("Exp10", "expx("),
                 ].height(Length::Fill).spacing(3),
                 row![
-                    operator('%', 24, 5), digit('0'), operator('.', 24, 3),
+                    operator('%', 24, 5), digit('0'), operator('.', 24, 0),
                     operator('+', 26, 3), operator('γ', 23, 0),
                     operator('=', 25, 3), func_label("Fac", "fac("),
                     func_label("Abs", "abs("), func_label("Ln", "ln("),
