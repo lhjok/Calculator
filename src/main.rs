@@ -114,7 +114,7 @@ fn handle_key(key: KeyCode, modi: Modifiers)
             Some(operator(String::from("÷"))),
         KeyCode::Key0 | KeyCode::Numpad0 =>
             if modi.control() {
-                Some(Message::Digit(String::from(")")))
+                Some(operator(String::from(")")))
             } else {
                 Some(Message::Digit(String::from("0")))
             },
@@ -128,13 +128,13 @@ fn handle_key(key: KeyCode, modi: Modifiers)
             Some(Message::Digit(String::from("4"))),
         KeyCode::Key5 | KeyCode::Numpad5 =>
             if modi.control() {
-                Some(Message::Digit(String::from("%")))
+                Some(operator(String::from("%")))
             } else {
                 Some(Message::Digit(String::from("5")))
             },
         KeyCode::Key6 | KeyCode::Numpad6 =>
             if modi.control() {
-                Some(Message::Digit(String::from("^")))
+                Some(operator(String::from("^")))
             } else {
                 Some(Message::Digit(String::from("6")))
             },
@@ -144,12 +144,12 @@ fn handle_key(key: KeyCode, modi: Modifiers)
             Some(Message::Digit(String::from("8"))),
         KeyCode::Key9 | KeyCode::Numpad9 =>
             if modi.control() {
-                Some(Message::Digit(String::from("(")))
+                Some(operator(String::from("(")))
             } else {
                 Some(Message::Digit(String::from("9")))
             },
         KeyCode::Period | KeyCode::NumpadDecimal =>
-            Some(Message::Digit(String::from("."))),
+            Some(operator(String::from("."))),
         KeyCode::Equals | KeyCode::NumpadEquals =>
             Some(operator(String::from("="))),
         KeyCode::Enter | KeyCode::NumpadEnter =>
