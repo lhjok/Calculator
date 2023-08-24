@@ -1,6 +1,7 @@
 use calc::Calc;
 use once_cell::sync::Lazy;
 use iced::executor::Default;
+use iced::window::Position;
 use textwrap::fill;
 
 use iced::{
@@ -96,7 +97,9 @@ fn handle_key(key: KeyCode, modi: Modifiers)
             Some(operator(String::from("γ"))),
         KeyCode::Delete => if modi.control() {
             Some(operator(String::from("D")))
-        } else { Some(operator(String::from("C"))) },
+        } else {
+            Some(operator(String::from("C")))
+        },
         KeyCode::LBracket =>
             Some(operator(String::from("("))),
         KeyCode::RBracket =>
@@ -112,7 +115,9 @@ fn handle_key(key: KeyCode, modi: Modifiers)
         KeyCode::Key0 | KeyCode::Numpad0 =>
             if modi.control() {
                 Some(Message::Digit(String::from(")")))
-            } else { Some(Message::Digit(String::from("0"))) },
+            } else {
+                Some(Message::Digit(String::from("0")))
+            },
         KeyCode::Key1 | KeyCode::Numpad1 =>
             Some(Message::Digit(String::from("1"))),
         KeyCode::Key2 | KeyCode::Numpad2 =>
@@ -124,11 +129,15 @@ fn handle_key(key: KeyCode, modi: Modifiers)
         KeyCode::Key5 | KeyCode::Numpad5 =>
             if modi.control() {
                 Some(Message::Digit(String::from("%")))
-            } else { Some(Message::Digit(String::from("5"))) },
+            } else {
+                Some(Message::Digit(String::from("5")))
+            },
         KeyCode::Key6 | KeyCode::Numpad6 =>
             if modi.control() {
                 Some(Message::Digit(String::from("^")))
-            } else { Some(Message::Digit(String::from("6"))) },
+            } else {
+                Some(Message::Digit(String::from("6")))
+            },
         KeyCode::Key7 | KeyCode::Numpad7 =>
             Some(Message::Digit(String::from("7"))),
         KeyCode::Key8 | KeyCode::Numpad8 =>
@@ -136,7 +145,9 @@ fn handle_key(key: KeyCode, modi: Modifiers)
         KeyCode::Key9 | KeyCode::Numpad9 =>
             if modi.control() {
                 Some(Message::Digit(String::from("(")))
-            } else { Some(Message::Digit(String::from("9"))) },
+            } else {
+                Some(Message::Digit(String::from("9")))
+            },
         KeyCode::Period | KeyCode::NumpadDecimal =>
             Some(Message::Digit(String::from("."))),
         KeyCode::Equals | KeyCode::NumpadEquals =>
@@ -557,6 +568,7 @@ pub fn main() -> iced::Result {
     Calculator::run(Settings{
         id: Some("Calculator".to_string()),
         window: window::Settings {
+            position: Position::Centered,
             max_size: Some((715, 607)),
             resizable: false,
             icon: Some(icon::from_file_data(
