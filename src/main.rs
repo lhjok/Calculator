@@ -515,30 +515,29 @@ impl Application for Calculator {
                     operator('C', 24, 3), func_label("Cos", "cos("),
                     func_label("Sin", "sin("), func_label("Tan", "tan("),
                     func_label("Acos", "acos("), func_label("Gamma", "gamma("),
-                ].height(Length::Fill).spacing(3),
+                ].height(45).spacing(3),
                 row![
                     digit('4'), digit('5'), digit('6'),
                     operator('×', 26, 3), operator('(', 24, 3),
                     operator(')', 24, 3), func_label("Cosh", "cosh("),
                     func_label("Sinh", "sinh("), func_label("Tanh", "tanh("),
                     func_label("Atan", "atan("), func_label("DiGam", "digamma("),
-                ].height(Length::Fill).spacing(3),
+                ].height(45).spacing(3),
                 row![
                     digit('1'), digit('2'), digit('3'),
                     oper_label('−', '-', 26, 3), operator('π', 24, 3),
                     oper_label('\u{039B}', '^', 21, 3), func_label("Sqrt", "sqrt("),
                     func_label("Log2", "log("), func_label("Log10", "logx("),
                     func_label("Asin", "asin("), func_label("Exp10", "expx("),
-                ].height(Length::Fill).spacing(3),
+                ].height(45).spacing(3),
                 row![
                     operator('%', 24, 5), digit('0'), operator('.', 24, 0),
                     operator('+', 26, 3), operator('γ', 23, 0),
                     operator('=', 25, 3), func_label("Fac", "fac("),
                     func_label("Abs", "abs("), func_label("Ln", "ln("),
                     func_label("Exp", "exp("), func_label("Exp2", "expt("),
-                ].height(Length::Fill).spacing(3),
-            ].padding(3)
-             .spacing(3)
+                ].height(45).spacing(3),
+            ].padding(3).spacing(3)
         ].into()
     }
 
