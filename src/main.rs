@@ -1,4 +1,4 @@
-use calc::Calc;
+use calc::Calculator;
 use once_cell::sync::Lazy;
 use iced::executor::Default;
 use iced::window::Position;
@@ -43,12 +43,12 @@ enum State {
 }
 
 #[derive(Clone)]
-struct Calculator {
+struct GCalculator {
     show: String,
     value: String,
     history: Vec<CalcResult>,
+    scroll: RelativeOffset,
     state: State,
-    scroll: RelativeOffset
 }
 
 #[derive(Clone)]
@@ -190,7 +190,7 @@ impl CalcResult {
     }
 }
 
-impl Calculator {
+impl GCalculator {
     fn oper_event(&mut self, op: &str, label: String) -> bool {
         match op {
             "D" => self.history = Vec::new(),
@@ -212,14 +212,15 @@ impl Calculator {
                 self.state = State::Set;
                 let expr = oper_repl(self.value.clone());
                 if self.value != "0" {
-                    match Calc::new(expr).run_round(Some(7)) {
+                    let mut calc = Calculator::new();
+                    match calc.run_round(&expr, Some(7)) {
                         Ok(valid) => {
                             self.value = valid.clone();
                             self.show = trunc(valid)
                         },
                         Err(msg) => {
                             self.value = String::from("0");
-                            self.show = msg
+                            self.show = msg.to_string()
                         }
                     }
                     return true;
@@ -282,15 +283,15 @@ impl Calculator {
     }
 }
 
-impl Application for Calculator {
-    type Flags = ();
-    type Message = Message;
+impl Application for GCalculator {
     type Executor = Default;
+    type Message = Message;
     type Theme = Theme;
+    type Flags = ();
 
     fn new(_: Self::Flags) ->
-        (Calculator, Command<Self::Message>) {
-        (Calculator {
+        (GCalculator, Command<Self::Message>) {
+        (GCalculator {
             show: String::from("0"),
             value: String::from("0"),
             history: Vec::new(),
@@ -303,7 +304,7 @@ impl Application for Calculator {
         String::from("Advanced Calculator")
     }
 
-    fn update(&mut self, msg: Self::Message) 
+    fn update(&mut self, msg: Self::Message)
         -> Command<Self::Message> {
         match msg {
             Message::Digit(num) => {
@@ -343,7 +344,7 @@ impl Application for Calculator {
         }
     }
 
-    fn view(&self) -> Element<Self::Message> {
+    fn view(&self) -> Element<'_, Self::Message> {
         let custom_rule: for<'a> fn(&'a _) -> _;
         custom_rule = |_: &Theme| -> rule::Appearance {
             rule::Appearance {
@@ -541,6 +542,10 @@ impl Application for Calculator {
         ].into()
     }
 
+    fn theme(&self) -> Theme {
+        Theme::Dark
+    }
+
     fn subscription(&self) -> Subscription<Self::Message> {
         subscription::events_with(|event, status| {
             if let Status::Captured = status {
@@ -557,14 +562,10 @@ impl Application for Calculator {
             }
         })
     }
-
-    fn theme(&self) -> Theme {
-        Theme::Dark
-    }
 }
 
 pub fn main() -> iced::Result {
-    Calculator::run(Settings{
+    GCalculator::run(Settings{
         id: Some("Calculator".to_string()),
         window: window::Settings {
             position: Position::Centered,

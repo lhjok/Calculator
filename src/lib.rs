@@ -1,22 +1,50 @@
 use rug::ops::Pow;
-use rug::{float::Constant, Float};
-use std::{char::from_digit, cell::RefCell};
-use std::collections::HashMap;
 use once_cell::sync::Lazy;
+use std::collections::HashMap;
+use rug::float::Constant;
+use rug::Float;
 
 #[derive(Clone)]
-enum Sign {
+enum Marker {
     Init,
-    Data,
-    Char
+    Number,
+    NegSub,
+    LParen,
+    RParen,
+    Char,
+    Const,
+    Func,
 }
 
-pub struct Calc {
-    sign: RefCell<Sign>,
-    numbers: RefCell<Vec<Float>>,
-    operator: RefCell<Vec<u8>>,
-    func: RefCell<HashMap<u32, String>>,
-    expression: String,
+#[derive(Clone)]
+enum State {
+    Initial,
+    Operator,
+    Operand,
+}
+
+#[derive(Clone)]
+pub enum CalcError {
+    UnknownOperator,
+    Custom(String),
+    DivideByZero,
+    BeyondAccuracy,
+    UnknownError,
+    ParameterError,
+    ExpressionError,
+    FunctionUndefined,
+    OperatorUndefined,
+    NoTerminator,
+    EmptyExpression,
+    InvalidNumber,
+}
+
+pub struct Calculator {
+    numbers: Vec<Float>,
+    function: HashMap<u32, String>,
+    operator: Vec<u8>,
+    marker: Marker,
+    state: State,
 }
 
 static MAX: Lazy<Float> = Lazy::new(||{
@@ -29,37 +57,45 @@ static MIN: Lazy<Float> = Lazy::new(||{
     Float::with_val(2560, min)
 });
 
+static MATH: &[&str] = &["abs","atan","cos","sin",
+"tan","csc","sec","cot","coth","ceil","floor","eint",
+"trunc","cosh","sinh","tanh","sech","ln","csch","fac",
+"acos","frac","sgn","ai","erf","gamma","digamma","exp",
+"acosh","asinh","atanh","recip","log","logx","sqrt",
+"li","cbrt","asin","erfc","expt","expx","zeta"];
+
 trait Symbol {
-    fn priority(&self) -> Result<u8, String>;
-    fn computing(&self, n: &Calc) -> Result<Float, String>;
+    fn priority(&self) -> Result<u8, CalcError>;
+    fn computing(&self, n: &mut Calculator) -> Result<Float, CalcError>;
 }
 
 trait Bignum {
     fn fmod(&self, n: &Float) -> Float;
-    fn accuracy(self) -> Result<Float, String>;
-    fn to_round(&self, n: Option<usize>) -> Result<String, String>;
+    fn accuracy(self) -> Result<Float, CalcError>;
+    fn to_round(&self, digits: Option<usize>) -> Result<String, CalcError>;
 }
 
 trait Other {
-    fn to_fixed(&self) -> String;
-    fn clean_zero(self) -> String;
-    fn math(&self, v: Float) -> Result<Float, String>;
-    fn extract(&self, n: usize, i: usize) -> Result<Float, String>;
+    fn parse_rug_raw(&self) -> (bool, Vec<u8>, i32);
+    fn to_fixed_clean(&self) -> Result<String, CalcError>;
+    fn to_fixed_round(&self, prec: i32) -> Result<String, CalcError>;
+    fn math(&self, v: Float) -> Result<Float, CalcError>;
+    fn extract(&self, n: usize, i: usize) -> Result<Float, CalcError>;
 }
 
 impl Symbol for u8 {
-    fn priority(&self) -> Result<u8, String> {
+    fn priority(&self) -> Result<u8, CalcError> {
         match self {
             b'+' | b'-' => Ok(1),
             b'*' | b'/' | b'%' => Ok(2),
             b'^' => Ok(3),
-            _ => Err("Unknown Operator".to_string())
+            _ => Err(CalcError::UnknownOperator)
         }
     }
 
-    fn computing(&self, num: &Calc) -> Result<Float, String> {
-        let c1 = num.numbers.borrow_mut().pop().unwrap();
-        let c2 = num.numbers.borrow_mut().pop().unwrap();
+    fn computing(&self, num: &mut Calculator) -> Result<Float, CalcError> {
+        let c1 = num.numbers.pop().ok_or(CalcError::ExpressionError)?;
+        let c2 = num.numbers.pop().ok_or(CalcError::ExpressionError)?;
         match self {
             b'+' => Float::with_val(2560, &c2 + &c1).accuracy(),
             b'-' => Float::with_val(2560, &c2 - &c1).accuracy(),
@@ -67,7 +103,7 @@ impl Symbol for u8 {
             b'/' if &c1 != &0.0 => Float::with_val(2560, &c2 / &c1).accuracy(),
             b'%' if &c1 != &0.0 => c2.fmod(&c1).accuracy(),
             b'^' => Float::with_val(2560, &c2.pow(&c1)).accuracy(),
-            _ => Err("Divide By Zero".to_string())
+            _ => Err(CalcError::DivideByZero)
         }
     }
 }
@@ -81,190 +117,167 @@ impl Bignum for Float {
         Float::with_val(2560, self - &m * n)
     }
 
-    fn accuracy(self) -> Result<Float, String> {
-        if *MAX < self && *MIN > self {
-            return Err("Beyond Accuracy".to_string());
+    fn accuracy(self) -> Result<Float, CalcError> {
+        if *MAX < self || *MIN > self {
+            return Err(CalcError::BeyondAccuracy);
         }
         Ok(self)
     }
 
-    fn to_round(&self, digits: Option<usize>) -> Result<String, String> {
-        let fix = if self < &1.0 && self > &-1.0 && self != &0.0 {
-            self.to_string_radix(10, None).to_fixed()
-        } else {
-            self.to_string_radix(10, None).clean_zero()
-        };
-
-        match digits {
-            None => Ok(fix),
-            Some(x) => {
-                if let None = fix.find('.') {
-                    return Ok(fix);
-                } else if x < 2 {
-                    return Err("Set Accuracy Greater Than 1".to_string());
-                }
-
-                let mut n: usize = 0;
-                let mut dig: usize = 0;
-                let mut point: bool = false;
-                let mut res = String::new();
-
-                for (i, v) in fix.as_bytes().iter().enumerate() {
-                    match v {
-                        b'-' => n = 1,
-                        b'.' => {
-                            dig = 0;
-                            point = true;
-                        },
-                        _ => dig += 1
-                    }
-                    if dig < x && i == fix.len()-1 {
-                        return Ok(fix);
-                    } else if point == true && dig == x && i <= fix.len()-1 {
-                        let a = fix[i..i+1].parse::<u32>().unwrap();
-                        let b = fix[i-1..i].parse::<u32>().unwrap();
-                        res = fix[..i].to_string();
-                        if a < 5 {
-                            return Ok(res.clean_zero());
-                        } else if b < 9 {
-                            res.pop();
-                            res.push(from_digit(b+1, 10).unwrap());
-                            return Ok(res);
-                        }
-                        break;
-                    }
-                }
-
-                let rev = res.chars().rev().collect::<String>();
-                for (i, v) in rev.as_bytes().iter().enumerate() {
-                    if v == &b'.' {
-                        continue;
-                    }
-                    let a = rev[i..i+1].parse::<u32>().unwrap();
-                    if a == 9 {
-                        res.remove(res.len()-1-i);
-                        if i == rev.len()-1-n {
-                            res.insert_str(0+n, &(a+1).to_string());
-                            return Ok(res.clean_zero());
-                        }
-                        res.insert(res.len()-i, from_digit(0, 10).unwrap());
-                    } else if a < 9 {
-                        res.remove(res.len()-1-i);
-                        res.insert(res.len()-i, from_digit(a+1, 10).unwrap());
-                        return Ok(res.clean_zero());
-                    }
-                    let point = rev[i+1..i+2].as_bytes();
-                    if point == &[b'.'] {
-                        continue;
-                    }
-                    let b = rev[i+1..i+2].parse::<u32>().unwrap();
-                    if b < 9 {
-                        res.remove(res.len()-2-i);
-                        res.insert(res.len()-1-i, from_digit(b+1, 10).unwrap());
-                        return Ok(res.clean_zero());
-                    }
-                }
-                Err("Unknown Error".to_string())
+    fn to_round(&self, digits: Option<usize>) -> Result<String, CalcError> {
+        if let Some(precision) = digits {
+            if precision < 2 || precision > 700 {
+                let err = String::from("Set Precision Greater Than 1");
+                return Err(CalcError::Custom(err));
             }
+        }
+        let raw = self.to_string_radix(10, None);
+        match digits {
+            None => raw.to_fixed_clean(),
+            Some(digits) => raw.to_fixed_round(digits as i32),
         }
     }
 }
 
 impl Other for String {
-    fn to_fixed(&self) -> String {
-        let mut exp: i32 = 0;
-        let (mut zero, mut i_or_u) = (0, 0);
-        let (mut temp, mut res) = (String::new(), String::new());
-
-        for (i, v) in self.as_bytes().iter().enumerate() {
-            if v == &b'e' {
-                temp = self[..i].to_string();
-                exp = self[i+1..].parse::<i32>().unwrap();
-                break;
-            }
+    fn parse_rug_raw(&self) -> (bool, Vec<u8>, i32) {
+        // 将科学计数法拆分成（符号、数字、指数）
+        let bytes = self.as_bytes();
+        let is_neg = bytes.starts_with(&[b'-']);
+        let start = if is_neg { 1 } else { 0 };
+        // 找到科学计数(e)的位置
+        let e_pos = bytes.iter().position(|&b| b == b'e');
+        let end = e_pos.unwrap_or(bytes.len());
+        let mantissa = &bytes[start..end];
+        // 创建一个等同大小的数字缓冲区
+        let mut digits = Vec::with_capacity(mantissa.len());
+        let mut dot_pos = None;
+        // 遍历和添加数字并定位点的位置
+        for (index, &byte) in mantissa.iter().enumerate() {
+            if byte == b'.' { 
+                dot_pos = Some(index as i32);
+            } else { digits.push(byte); }
         }
-
-        if exp == 0 {
-            temp = self.clone();
-        }
-
-        for (i, v) in temp.as_bytes().iter().enumerate() {
-            match v {
-                b'.' => {
-                    res = temp[..i].to_string();
-                    res += &temp[i+1..];
-                    zero = 0;
-                },
-                b'-' => {
-                    if exp < 0 {
-                        i_or_u = 1
-                    } else {
-                        exp += 1
-                    };
-                    zero = 0;
-                },
-                b'0' => zero += 1,
-                _ => zero = 0
-            }
-        }
-
-        if exp < 0 {
-            exp = exp.abs();
-            for _ in 0..exp {
-                res.insert(i_or_u, '0');
-                exp -= 1;
-            }
-            if i_or_u != 0 {
-                exp += 1;
-            }
-        }
-
-        if exp == 0 && res.len()-zero == 1 {
-            return res[..res.len()-zero].to_string();
-        } else if exp == 0 && res.len()-zero > 1 {
-            res = res[..res.len()-zero].to_string();
-            res.insert(1, '.');
-            return res;
-        }
-
-        let u_exp = exp as usize + 1;
-        res.insert(u_exp, '.');
-        if u_exp >= res.len()-1-zero {
-            return res[..u_exp].to_string();
-        }
-        res[..res.len()-zero].to_string()
+        // 找出(e)后面的数字
+        let raw_exp: i32 = e_pos.map(|pos|{
+            self[pos+1..].parse().unwrap_or(0)
+        }).unwrap_or(0);
+        // 找出小数点后面的数字
+        let adj_exp = dot_pos.map(|pos| raw_exp+pos)
+        .unwrap_or(raw_exp+digits.len() as i32);
+        (is_neg, digits, adj_exp)
     }
 
-    fn clean_zero(self) -> String {
-        let mut find: bool = false;
-        let (mut zero, mut dig) = (0, 0);
-        for valid in self.as_bytes().iter() {
-            match valid {
-                b'0' => {
-                    dig += 1;
-                    zero += 1;
-                },
-                b'.' => {
-                    dig = 0;
-                    find = true;
-                    zero = 0;
-                },
-                _ => {
-                    dig += 1;
-                    zero = 0;
-                },
+    fn to_fixed_clean(&self) -> Result<String, CalcError> {
+        // 将科学计数法拆分成（符号、数字、指数）
+        let (negative, digits, exp) = self.parse_rug_raw();
+        // 创建一个计算好的缓冲区
+        let mut cursor = 0;
+        let digits_len = digits.len();
+        let exp_abs = (exp.unsigned_abs()+2) as usize;
+        let mut buf = vec![b'0'; digits_len+exp_abs];
+        if negative { buf[cursor] = b'-'; cursor += 1; }
+        // 按顺序移动cursor值
+        if exp <= 0 {   // 当指数小于等于0时
+            buf[cursor..cursor+2]
+            .copy_from_slice(b"0.");
+            cursor += 2;
+            let zeros = exp.abs() as usize;
+            cursor += zeros;
+            buf[cursor..cursor+digits_len]
+            .copy_from_slice(&digits);
+            cursor += digits_len;
+        } else {
+            // 当指数大于0时，执行如下。
+            let dot_idx = exp as usize;
+            if dot_idx >= digits_len {
+                buf[cursor..cursor+digits_len]
+                .copy_from_slice(&digits);
+                cursor += digits_len;
+                let trailing_zeros = dot_idx-digits_len;
+                cursor += trailing_zeros;
+            } else {
+                buf[cursor..cursor+dot_idx]
+                .copy_from_slice(&digits[..dot_idx]);
+                cursor += dot_idx;
+                buf[cursor] = b'.';
+                cursor += 1;
+                let rem = digits_len-dot_idx;
+                buf[cursor..cursor+rem]
+                .copy_from_slice(&digits[dot_idx..]);
+                cursor += rem;
             }
         }
-        if find == true {
-            if zero == dig {
-                return self[..self.len()-dig-1].to_string();
+        // 清楚尾部多余的零
+        let mut final_len = cursor;
+        if buf[..final_len].contains(&b'.') {
+            while final_len > 0 {
+                match buf[final_len-1] {
+                    b'0' => final_len -= 1,
+                    b'.' => { final_len -= 1; break; }
+                    _ => break,
+                }
             }
-            return self[..self.len()-zero].to_string();
         }
-        self
+        // 最后缓冲区转换成字符串
+        buf.truncate(final_len);
+        Ok(String::from_utf8(buf).unwrap())
     }
 
-    fn math(&self, v: Float) -> Result<Float, String> {
+    fn to_fixed_round(&self, prec: i32) -> Result<String, CalcError> {
+        // 将科学计数法拆分成（符号、数字、指数）
+        let (negative, digits, exp) = self.parse_rug_raw();
+        let round_idx = (exp+prec) as usize;
+        // 判断四舍五入进位
+        let mut carry = false;   // 进位开关默认关闭
+        if round_idx < digits.len() && digits[round_idx] >= b'5' {
+            carry = true;   // 打开进位开关
+        }
+        // 创建一个足够大的缓冲区
+        let mut buf = [b'0'; 4096];
+        let mut cursor = 4095;   // 移位倒计数
+        let max_bound = (exp+prec)-1;
+        let min_bound = std::cmp::min(0, exp-1);
+        for index in (min_bound..=max_bound).rev() {
+            // 只有在(prec>0)且到达exp位置时插入
+            if index == exp-1 && prec > 0 {
+                buf[cursor] = b'.';   // 插入小数点
+                cursor -= 1;
+            }
+            // 遍历出(digits)单个数字
+            let index = index as usize;
+            let mut digit = if index < digits.len() {
+                digits[index]
+            } else { b'0' };
+            // 关闭进位开关结束进位
+            if carry {
+                if digit == b'9' {
+                    digit = b'0';
+                } else {
+                    digit += 1;
+                    carry = false;
+                }
+            }
+            // 把单位数添加进缓冲区
+            buf[cursor] = digit;
+            cursor -= 1;
+        }
+        // 循环结束后还有进位则直接补'1'。
+        if carry {
+            buf[cursor] = b'1';
+            cursor -= 1;
+        }
+        // 如果有符号则添加到缓冲区
+        if negative {
+            buf[cursor] = b'-';
+            cursor -= 1;
+        }
+        // 缓冲区数据转成字符串
+        let result = buf[cursor + 1..4096].to_vec();
+        Ok(String::from_utf8(result).unwrap())
+    }
+
+    fn math(&self, v: Float) -> Result<Float, CalcError> {
         match self.as_str() {
             "ai" => v.ai().accuracy(),
             "li" => v.li2().accuracy(),
@@ -312,192 +325,206 @@ impl Other for String {
                 let fac = Float::factorial(to_u32);
                 Float::with_val(2560, fac).accuracy()
             },
-            _ => Err("Parameter Error".to_string())
+            _ => Err(CalcError::ParameterError)
         }
     }
 
-    fn extract(&self, n: usize, i: usize) -> Result<Float, String> {
+    fn extract(&self, n: usize, i: usize) -> Result<Float, CalcError> {
         match Float::parse(&self[n..i]) {
             Ok(valid) => Float::with_val(2560, valid).accuracy(),
-            Err(_) => Err("Invalid Number".to_string())
+            Err(_) => Err(CalcError::InvalidNumber)
         }
     }
 }
 
-impl Calc {
-    pub fn new(expr: String) -> Self {
+impl CalcError {
+    pub fn to_string(&self) -> String {
+        match self {
+            CalcError::UnknownOperator => String::from("Unknown Operator"),
+            CalcError::Custom(error) => String::from(error),
+            CalcError::DivideByZero => String::from("Divide By Zero"),
+            CalcError::BeyondAccuracy => String::from("Beyond Accuracy"),
+            CalcError::UnknownError => String::from("Unknown Error"),
+            CalcError::ParameterError => String::from("Parameter Error"),
+            CalcError::ExpressionError => String::from("Expression Error"),
+            CalcError::FunctionUndefined => String::from("Function Undefined"),
+            CalcError::OperatorUndefined => String::from("Operator Undefined"),
+            CalcError::NoTerminator => String::from("No Terminator"),
+            CalcError::EmptyExpression => String::from("Empty Expression"),
+            CalcError::InvalidNumber => String::from("Invalid Number"),
+        }
+    }
+}
+
+impl Calculator {
+    pub fn new() -> Self {
         Self {
-            sign: RefCell::new(Sign::Init),
-            numbers: RefCell::new(Vec::new()),
-            operator: RefCell::new(Vec::new()),
-            func: RefCell::new(HashMap::new()),
-            expression: expr + "=",
+            numbers: Vec::new(),
+            function: HashMap::new(),
+            operator: Vec::new(),
+            state: State::Initial,
+            marker: Marker::Init,
         }
     }
 
-    pub fn run(&self) -> Result<Float, String> {
-        let num = &self.numbers;
-        let ope = &self.operator;
-        let expr = &self.expression;
-        let math = ["abs","atan","cos","sin","tan","csc","sec","cot","coth","ceil",
-        "floor","eint","trunc","cosh","sinh","tanh","sech","ln","csch","acos","fac",
-        "frac","sgn","ai","erf","gamma","digamma","acosh","asinh","atanh","recip",
-        "log","logx","li","sqrt","cbrt","asin","erfc","exp","expt","expx","zeta"];
-        let mut mark: u8 = b'I'; // I = Init, C = Char, N = Number, F = Func, P = Pi
+    pub fn run(&mut self, expr: &String) -> Result<Float, CalcError> {
+        let expr = format!("{}=", expr);
         let mut locat: usize = 0;
         let mut bracket: u32 = 0;
 
         for (index, &valid) in expr.as_bytes().iter().enumerate() {
             match valid {
                 b'0'..=b'9' | b'.' => {
-                    if mark != b')' && mark != b'P' && mark != b'F' {
-                        mark = b'N';
+                    if !matches!(self.marker, Marker::RParen | Marker::Const | Marker::Func) {
+                        self.marker = Marker::Number;
                         continue;
                     }
-                    return Err("Expression Error".to_string());
+                    return Err(CalcError::ExpressionError);
                 }
 
                 b'a'..=b'z' => {
-                    if mark != b')' && mark != b'P' && mark != b'-' && mark != b'N' {
-                        mark = b'F';
+                    if !matches!(self.marker, Marker::RParen | Marker::Const | Marker::NegSub | Marker::Number) {
+                        self.marker = Marker::Func;
                         continue;
                     }
-                    return Err("Expression Error".to_string());
+                    return Err(CalcError::ExpressionError);
                 }
 
                 ch @ b'+' | ch @ b'-' | ch @ b'*' | ch @ b'/' | ch @ b'%' | ch @ b'^' => {
-                    if ch == b'-' && ( mark == b'I' || mark == b'(' || mark == b'C' ) {
-                        mark = b'-';
+                    if ch == b'-' && matches!(self.marker, Marker::Init | Marker::LParen | Marker::Char) {
+                        self.marker = Marker::NegSub;
                         continue;
-                    } else if mark != b'N' && mark != b')' && mark != b'P' {
-                        return Err("Expression Error".to_string());
+                    } else if !matches!(self.marker, Marker::Number | Marker::RParen | Marker::Const) {
+                        return Err(CalcError::ExpressionError);
                     }
 
-                    if let Sign::Char | Sign::Init = self.sign.clone().into_inner() {
-                        num.borrow_mut().push(expr.extract(locat, index)?);
-                        *self.sign.borrow_mut() = Sign::Data;
+                    if matches!(self.state, State::Operator | State::Initial) {
+                        self.numbers.push(expr.extract(locat, index)?);
+                        self.state = State::Operand;
                     }
 
-                    while ope.borrow().len() != 0 && ope.borrow().last().unwrap() != &b'(' {
-                        if ope.borrow().last().unwrap().priority()? >= ch.priority()? {
-                            let value = ope.borrow_mut().pop().unwrap().computing(self)?;
-                            num.borrow_mut().push(value);
+                    while self.operator.len() != 0 && self.operator.last().unwrap() != &b'(' {
+                        if self.operator.last().unwrap().priority()? >= ch.priority()? {
+                            let value = self.operator.pop().unwrap().computing(self)?;
+                            self.numbers.push(value);
                         } else {
                             break;
                         }
                     }
 
-                    ope.borrow_mut().push(ch);
-                    *self.sign.borrow_mut() = Sign::Char;
+                    self.operator.push(ch);
+                    self.state = State::Operator;
+                    self.marker = Marker::Char;
                     locat = index + 1;
-                    mark = b'C';
                     continue;
                 }
 
                 ch @ b'(' => {
-                    if mark == b'F' {
+                    if matches!(self.marker, Marker::Func) {
                         let valid = expr[locat..index].to_string();
-                        if math.iter().any(|&value| value == valid) {
-                            self.func.borrow_mut().insert(bracket+1, valid);
+                        if MATH.iter().any(|&value| value == valid) {
+                            self.function.insert(bracket+1, valid);
                         } else {
-                            return Err("Function Undefined".to_string());
+                            return Err(CalcError::ExpressionError);
                         }
                     }
 
-                    if let Sign::Char | Sign::Init = self.sign.clone().into_inner() {
-                        if mark != b'N' && mark != b'-' {
-                            ope.borrow_mut().push(ch);
+                    if matches!(self.state, State::Operator | State::Initial) {
+                        if !matches!(self.marker, Marker::Number | Marker::NegSub) {
+                            self.operator.push(ch);
                             locat = index + 1;
+                            self.marker = Marker::LParen;
                             bracket = bracket + 1;
-                            mark = b'(';
                             continue;
                         }
                     }
-                    return Err("Expression Error".to_string());
+                    return Err(CalcError::ExpressionError);
                 }
 
                 b')' => {
-                    if let Sign::Char | Sign::Init = self.sign.clone().into_inner() {
-                        if mark == b'N' {
-                            num.borrow_mut().push(expr.extract(locat, index)?);
-                            *self.sign.borrow_mut() = Sign::Data;
+                    if matches!(self.state, State::Operator | State::Initial) {
+                        if matches!(self.marker, Marker::Number) {
+                            self.numbers.push(expr.extract(locat, index)?);
+                            self.state = State::Operand;
                         }
                     }
 
-                    if let Sign::Data = self.sign.clone().into_inner() {
+                    if matches!(self.state, State::Operand) {
                         if bracket > 0 {
-                            while ope.borrow().last().unwrap() != &b'(' {
-                                let value = ope.borrow_mut().pop().unwrap().computing(self)?;
-                                num.borrow_mut().push(value);
+                            while self.operator.last().unwrap() != &b'(' {
+                                let value = self.operator.pop().unwrap().computing(self)?;
+                                self.numbers.push(value);
                             }
 
-                            if let Some(fun) = self.func.borrow_mut().remove(&bracket) {
-                                let value = fun.math(num.borrow_mut().pop().unwrap())?;
-                                num.borrow_mut().push(value);
+                            if let Some(fun) = self.function.remove(&bracket) {
+                                let value = fun.math(self.numbers.pop().unwrap())?;
+                                self.numbers.push(value);
                             }
 
-                            ope.borrow_mut().pop();
                             locat = index + 1;
+                            self.operator.pop();
+                            self.marker = Marker::RParen;
                             bracket = bracket - 1;
-                            mark = b')';
                             continue;
                         }
                     }
-                    return Err("Expression Error".to_string());
+                    return Err(CalcError::ExpressionError);
                 }
 
                 b'=' | b'\n' | b'\r' => {
-                    if mark == b'I' {
-                        return Err("Empty Expression".to_string());
-                    } else if bracket > 0 || mark == b'-' || mark == b'C' || mark == b'F' {
-                        return Err("Expression Error".to_string());
+                    if matches!(self.marker, Marker::Init) {
+                        return Err(CalcError::EmptyExpression);
+                    } else if bracket > 0 || matches!(self.marker, Marker::NegSub | Marker::Char | Marker::Func) {
+                        return Err(CalcError::ExpressionError);
                     }
 
-                    if let Sign::Char | Sign::Init = self.sign.clone().into_inner() {
-                        num.borrow_mut().push(expr.extract(locat, index)?);
-                        *self.sign.borrow_mut() = Sign::Data;
+                    if matches!(self.state, State::Operator | State::Initial) {
+                        self.numbers.push(expr.extract(locat, index)?);
+                        self.state = State::Operand;
                     }
 
-                    while ope.borrow().len() != 0 {
-                        let value = ope.borrow_mut().pop().unwrap().computing(self)?;
-                        num.borrow_mut().push(value);
+                    while self.operator.len() != 0 {
+                        let value = self.operator.pop().unwrap().computing(self)?;
+                        self.numbers.push(value);
                     }
-                    return Ok(num.borrow_mut().pop().unwrap());
+                    return Ok(self.numbers.pop().unwrap());
                 }
 
                 ch @ b'P' | ch @ b'E' | ch @ b'C' | ch @ b'L' => {
-                    if let Sign::Char | Sign::Init = self.sign.clone().into_inner() {
+                    if matches!(self.state, State::Operator | State::Initial) {
                         let constant = match ch {
                             b'P' => &Constant::Pi,
                             b'E' => &Constant::Euler,
                             b'C' => &Constant::Catalan,
-                            _ => &Constant::Log2
+                            b'L' | _ => &Constant::Log2
                         };
 
-                        if mark != b'N' && mark != b'F' {
-                            let value = if mark == b'-' {
+                        if !matches!(self.marker, Marker::Number | Marker::Func) {
+                            let value = if matches!(self.marker, Marker::NegSub) {
                                 0.0 - Float::with_val(128, constant)
                             } else {
                                 Float::with_val(128, constant)
                             };
-                            num.borrow_mut().push(value);
-                            *self.sign.borrow_mut() = Sign::Data;
+                            self.numbers.push(value);
+                            self.state = State::Operand;
+                            self.marker = Marker::Const;
                             locat = index + 1;
-                            mark = b'P';
                             continue;
                         }
                     }
-                    return Err("Expression Error".to_string());
+                    return Err(CalcError::ExpressionError);
                 }
 
-                _ => return Err("Operator Undefined".to_string())
+                _ => return Err(CalcError::OperatorUndefined)
             }
         }
-        Err("No Terminator".to_string())
+        Err(CalcError::NoTerminator)
     }
 
-    pub fn run_round(&self, digits: Option<usize>) -> Result<String, String> {
-        match self.run() {
+    pub fn run_round(
+        &mut self, expr: &String, digits: Option<usize>
+    ) -> Result<String, CalcError> {
+        match self.run(expr) {
             Ok(value) => Ok(value.to_round(digits)?),
             Err(err) => Err(err)
         }
