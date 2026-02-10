@@ -154,7 +154,7 @@ impl Other for String {
         let mut dot_pos = None;
         // 遍历和添加数字并定位点的位置
         for (index, &byte) in mantissa.iter().enumerate() {
-            if byte == b'.' { 
+            if byte == b'.' {
                 dot_pos = Some(index as i32);
             } else { digits.push(byte); }
         }
@@ -273,7 +273,7 @@ impl Other for String {
             cursor -= 1;
         }
         // 缓冲区数据转成字符串
-        let result = buf[cursor + 1..4096].to_vec();
+        let result = buf[cursor+1..4096].to_vec();
         Ok(String::from_utf8(result).unwrap())
     }
 
@@ -496,7 +496,8 @@ impl Calculator {
                             b'P' => &Constant::Pi,
                             b'E' => &Constant::Euler,
                             b'C' => &Constant::Catalan,
-                            b'L' | _ => &Constant::Log2
+                            b'L' => &Constant::Log2,
+                            _ => return Err(CalcError::UnknownError)
                         };
 
                         if !matches!(self.marker, Marker::Number | Marker::Func) {
