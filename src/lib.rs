@@ -52,11 +52,6 @@ static MAX: Lazy<Float> = Lazy::new(||{
     Float::with_val(2560, max)
 });
 
-static MIN: Lazy<Float> = Lazy::new(||{
-    let min = Float::parse("-1e+764").unwrap();
-    Float::with_val(2560, min)
-});
-
 static MATH: &[&str] = &["abs","atan","cos","sin",
 "tan","csc","sec","cot","coth","ceil","floor","eint",
 "trunc","cosh","sinh","tanh","sech","ln","csch","fac",
@@ -118,10 +113,11 @@ impl Bignum for Float {
     }
 
     fn accuracy(self) -> Result<Float, CalcError> {
-        if *MAX < self || *MIN > self {
-            return Err(CalcError::BeyondAccuracy);
-        }
-        Ok(self)
+        if self.is_nan() || self.is_infinite() {
+            Err(CalcError::BeyondAccuracy)
+        } else if self.abs() > *MAX {
+            Err(CalcError::BeyondAccuracy)
+        } else { Ok(self) }
     }
 
     fn to_round(&self, digits: Option<usize>) -> Result<String, CalcError> {
@@ -162,7 +158,7 @@ impl Other for String {
         let raw_exp: i32 = e_pos.map(|pos|{
             self[pos+1..].parse().unwrap_or(0)
         }).unwrap_or(0);
-        // 找出小数点后面的数字
+        // 确保小数点位置逻辑统一
         let adj_exp = dot_pos.map(|pos| raw_exp+pos)
         .unwrap_or(raw_exp+digits.len() as i32);
         (is_neg, digits, adj_exp)
@@ -176,7 +172,11 @@ impl Other for String {
         let digits_len = digits.len();
         let exp_abs = (exp.unsigned_abs()+2) as usize;
         let mut buf = vec![b'0'; digits_len+exp_abs];
-        if negative { buf[cursor] = b'-'; cursor += 1; }
+        // 检查当前是否为负数
+        if negative {
+            buf[cursor] = b'-';  // 首位添加符号
+            cursor += 1;
+        }
         // 按顺序移动cursor值
         if exp <= 0 {   // 当指数小于等于0时
             buf[cursor..cursor+2]
@@ -235,7 +235,7 @@ impl Other for String {
         }
         // 创建一个足够大的缓冲区
         let mut buf = [b'0'; 4096];
-        let mut cursor = 4095;   // 移位倒计数
+        let mut cursor = 4095;   // 移位倒计数，逆向填充逻辑。
         let max_bound = (exp+prec)-1;
         let min_bound = std::cmp::min(0, exp-1);
         for index in (min_bound..=max_bound).rev() {
@@ -421,8 +421,8 @@ impl Calculator {
 
                 ch @ b'(' => {
                     if matches!(self.marker, Marker::Func) {
-                        let valid = expr[locat..index].to_string();
-                        if MATH.iter().any(|&value| value == valid) {
+                        let valid = expr[locat..index].to_owned();
+                        if MATH.binary_search(&valid.as_str()).is_ok() {
                             self.function.insert(bracket+1, valid);
                         } else {
                             return Err(CalcError::ExpressionError);
