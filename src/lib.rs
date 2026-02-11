@@ -367,6 +367,15 @@ impl Calculator {
         }
     }
 
+    fn reset(&mut self, result: Float) -> Float {
+        self.numbers.clear();
+        self.state = State::Initial;
+        self.function.clear();
+        self.marker = Marker::Init;
+        self.operator.clear();
+        result
+    }
+
     pub fn run(&mut self, expr: &String) -> Result<Float, CalcError> {
         let expr = format!("{}=", expr);
         let mut locat: usize = 0;
@@ -487,7 +496,8 @@ impl Calculator {
                         let value = self.operator.pop().unwrap().computing(self)?;
                         self.numbers.push(value);
                     }
-                    return Ok(self.numbers.pop().unwrap());
+                    let result = self.numbers.pop().unwrap();
+                    return Ok(self.reset(result));
                 }
 
                 ch @ b'P' | ch @ b'E' | ch @ b'C' | ch @ b'L' => {
