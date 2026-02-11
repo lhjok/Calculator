@@ -23,7 +23,7 @@ enum State {
     Operand,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum CalcError {
     UnknownOperator,
     Custom(String),
@@ -115,7 +115,7 @@ impl Bignum for Float {
     fn accuracy(self) -> Result<Float, CalcError> {
         if self.is_nan() || self.is_infinite() {
             Err(CalcError::BeyondAccuracy)
-        } else if self.abs() > *MAX {
+        } else if self > *MAX || self < *MAX.as_neg() {
             Err(CalcError::BeyondAccuracy)
         } else { Ok(self) }
     }
