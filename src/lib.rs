@@ -52,12 +52,12 @@ static MAX: Lazy<Float> = Lazy::new(||{
     Float::with_val(2560, max)
 });
 
-static MATH: &[&str] = &["abs","atan","cos","sin",
-"tan","csc","sec","cot","coth","ceil","floor","eint",
-"trunc","cosh","sinh","tanh","sech","ln","csch","fac",
-"acos","frac","sgn","ai","erf","gamma","digamma","exp",
-"acosh","asinh","atanh","recip","log","logx","sqrt",
-"li","cbrt","asin","erfc","expt","expx","zeta"];
+static MATH: &[&str] = &["abs","acos","acosh","ai",
+"asin","asinh","atan","atanh","cbrt","ceil","cos",
+"cosh","cot","coth","csc","csch","digamma","eint",
+"erf","erfc","exp","expx","expt","fac","floor","frac",
+"gamma","li","ln","log","logx","recip","sec","sech",
+"sgn","sin","sinh","sqrt","tan","tanh","trunc","zeta"];
 
 trait Symbol {
     fn priority(&self) -> Result<u8, CalcError>;
@@ -177,10 +177,13 @@ impl Other for String {
             buf[cursor] = b'-';  // 首位添加符号
             cursor += 1;
         }
+        // 记录小数点所在位置
+        let dot_pos: Option<usize>;
         // 按顺序移动cursor值
         if exp <= 0 {   // 当指数小于等于0时
             buf[cursor..cursor+2]
             .copy_from_slice(b"0.");
+            dot_pos = Some(cursor+1);
             cursor += 2;
             let zeros = exp.abs() as usize;
             cursor += zeros;
@@ -196,11 +199,13 @@ impl Other for String {
                 cursor += digits_len;
                 let trailing_zeros = dot_idx-digits_len;
                 cursor += trailing_zeros;
+                dot_pos = None;
             } else {
                 buf[cursor..cursor+dot_idx]
                 .copy_from_slice(&digits[..dot_idx]);
                 cursor += dot_idx;
                 buf[cursor] = b'.';
+                dot_pos = Some(cursor);
                 cursor += 1;
                 let rem = digits_len-dot_idx;
                 buf[cursor..cursor+rem]
@@ -210,7 +215,10 @@ impl Other for String {
         }
         // 清楚尾部多余的零
         let mut final_len = cursor;
-        if buf[..final_len].contains(&b'.') {
+        if let Some(dot) = dot_pos {
+            let dec_len = cursor-dot;
+            final_len = if dec_len < 700
+            { dec_len } else { 700 };
             while final_len > 0 {
                 match buf[final_len-1] {
                     b'0' => final_len -= 1,
