@@ -1,8 +1,9 @@
+use rug::Float;
 use rug::ops::Pow;
 use once_cell::sync::Lazy;
-use std::collections::HashMap;
 use rug::float::Constant;
-use rug::Float;
+use phf::phf_map;
+use phf::Map;
 
 #[derive(Clone)]
 enum Marker {
@@ -39,46 +40,122 @@ pub enum CalcError {
     InvalidNumber,
 }
 
-pub struct Calculator {
-    marker: Marker,
-    operator: Vec<u8>,
-    function: HashMap<u32, String>,
-    numbers: Vec<Float>,
-    state: State,
-}
-
 static MAX: Lazy<Float> = Lazy::new(||{
     let max = Float::parse("1e+764").unwrap();
     Float::with_val(2560, max)
 });
 
-static MATH: &[&str] = &[
-"abs","acos","acosh","ai","asin","asinh","atan","atanh",
-"cbrt","ceil","cos","cosh","cot","coth","csc","csch","digamma",
-"eint","erf","erfc","exp","expx","expt","fac","floor","frac",
-"gamma","li","ln","log","logx","recip","sec","sech","sgn",
-"sin","sinh","sqrt","tan","tanh","trunc","zeta"];
+type MathFn = fn(Float) -> Result<Float, CalcError>;
+static MATH: Map<&'static str, MathFn> = phf_map! {
+    "ai" => |v| v.ai().accuracy(),
+    "li" => |v| v.li2().accuracy(),
+    "erf" => |v| v.erf().accuracy(),
+    "erfc" => |v| v.erfc().accuracy(),
+    "abs" => |v| v.abs().accuracy(),
+    "ln" => |v| if v <= 0.0 {
+        Err(CalcError::ParameterError)
+    } else { v.ln().accuracy() },
+    "exp" => |v| v.exp().accuracy(),
+    "expt" => |v| v.exp2().accuracy(),
+    "expx" => |v| v.exp10().accuracy(),
+    "trunc" => |v| v.trunc().accuracy(),
+    "zeta" => |v| if v == 1.0 {
+        Err(CalcError::ParameterError)
+    } else { v.zeta().accuracy() },
+    "gamma" => |v| if v == 0.0 {
+        Err(CalcError::ParameterError)
+    } else { v.gamma().accuracy() },
+    "digamma" => |v| if v == 0.0 {
+        Err(CalcError::ParameterError)
+    } else { v.digamma().accuracy() },
+    "eint" => |v| if v == 0.0 {
+        Err(CalcError::ParameterError)
+    } else { v.eint().accuracy() },
+    "log" => |v| if v <= 0.0 {
+        Err(CalcError::ParameterError)
+    } else { v.log2().accuracy() },
+    "logx" => |v| if v <= 0.0 {
+        Err(CalcError::ParameterError)
+    } else { v.log10().accuracy() },
+    "cos" => |v| v.cos().accuracy(),
+    "sin" => |v| v.sin().accuracy(),
+    "tan" => |v| v.tan().accuracy(),
+    "sec" => |v| v.sec().accuracy(),
+    "csc" => |v| if v == 0.0 {
+        Err(CalcError::ParameterError)
+    } else { v.csc().accuracy() },
+    "cot" => |v| if v == 0.0 {
+        Err(CalcError::ParameterError)
+    } else { v.cot().accuracy() },
+    "cosh" => |v| v.cosh().accuracy(),
+    "sinh" => |v| v.sinh().accuracy(),
+    "tanh" => |v| v.tanh().accuracy(),
+    "ceil" => |v| v.ceil().accuracy(),
+    "floor" => |v| v.floor().accuracy(),
+    "frac" => |v| v.fract().accuracy(),
+    "sgn" => |v| v.signum().accuracy(),
+    "recip" => |v| if v == 0.0 {
+        Err(CalcError::ParameterError)
+    } else { v.recip().accuracy() },
+    "csch" => |v| if v == 0.0 {
+        Err(CalcError::ParameterError)
+    } else { v.csch().accuracy() },
+    "sech" => |v| v.sech().accuracy(),
+    "coth" => |v| if v == 0.0 {
+        Err(CalcError::ParameterError)
+    } else { v.coth().accuracy() },
+    "acos" => |v| if v < -1.0 || v > 1.0 {
+        Err(CalcError::ParameterError)
+    } else { v.acos().accuracy() },
+    "asin" => |v| if v < -1.0 || v > 1.0 {
+        Err(CalcError::ParameterError)
+    } else { v.asin().accuracy() },
+    "atan" => |v| v.atan().accuracy(),
+    "acosh" => |v| if v < 1.0 {
+        Err(CalcError::ParameterError)
+    } else { v.acosh().accuracy() },
+    "asinh" => |v| v.asinh().accuracy(),
+    "atanh" => |v| if v <= -1.0 || v >= 1.0 {
+        Err(CalcError::ParameterError)
+    } else { v.atanh().accuracy() },
+    "cbrt" => |v| v.cbrt().accuracy(),
+    "sqrt" => |v| if v < 0.0 {
+        Err(CalcError::ParameterError)
+    } else { v.sqrt().accuracy() },
+    "fac" => |v| {
+        let to_u32 = v.to_u32_saturating().unwrap();
+        let fac = Float::factorial(to_u32);
+        Float::with_val(2560, fac).accuracy()
+    },
+};
 
-trait Symbol {
+pub struct Calculator {
+    marker: Marker,
+    operator: Vec<u8>,
+    function: Vec<Option<MathFn>>,
+    numbers: Vec<Float>,
+    state: State,
+}
+
+trait ByteExt {
     fn priority(&self) -> Result<u8, CalcError>;
     fn computing(&self, n: &mut Calculator) -> Result<Float, CalcError>;
 }
 
-trait Bignum {
+trait FloatExt {
     fn fmod(&self, n: &Float) -> Float;
     fn accuracy(self) -> Result<Float, CalcError>;
     fn to_round(&self, digits: Option<usize>) -> Result<String, CalcError>;
 }
 
-trait Other {
+trait StringExt {
     fn parse_rug_raw(&self) -> (bool, Vec<u8>, i32);
     fn to_fixed_clean(&self) -> Result<String, CalcError>;
     fn to_fixed_round(&self, prec: i32) -> Result<String, CalcError>;
-    fn math(&self, v: Float) -> Result<Float, CalcError>;
     fn extract(&self, n: usize, i: usize) -> Result<Float, CalcError>;
 }
 
-impl Symbol for u8 {
+impl ByteExt for u8 {
     fn priority(&self) -> Result<u8, CalcError> {
         match self {
             b'+' | b'-' => Ok(1),
@@ -103,7 +180,7 @@ impl Symbol for u8 {
     }
 }
 
-impl Bignum for Float {
+impl FloatExt for Float {
     fn fmod(&self, n: &Float) -> Float {
         let mut m = Float::with_val(2560, self / n);
         if self < &0.0 {
@@ -135,7 +212,7 @@ impl Bignum for Float {
     }
 }
 
-impl Other for String {
+impl StringExt for String {
     fn parse_rug_raw(&self) -> (bool, Vec<u8>, i32) {
         let bytes = self.as_bytes();
         let is_neg = bytes.starts_with(&[b'-']);
@@ -270,58 +347,6 @@ impl Other for String {
         Ok(String::from_utf8(result).unwrap())
     }
 
-    fn math(&self, v: Float) -> Result<Float, CalcError> {
-        match self.as_str() {
-            "ai" => v.ai().accuracy(),
-            "li" => v.li2().accuracy(),
-            "erf" => v.erf().accuracy(),
-            "erfc" => v.erfc().accuracy(),
-            "abs" => v.abs().accuracy(),
-            "ln" if v > 0.0 => v.ln().accuracy(),
-            "exp" => v.exp().accuracy(),
-            "expt" => v.exp2().accuracy(),
-            "expx" => v.exp10().accuracy(),
-            "trunc" => v.trunc().accuracy(),
-            "zeta" if v != 1.0 => v.zeta().accuracy(),
-            "gamma" if v != 0.0 => v.gamma().accuracy(),
-            "digamma" if v != 0.0 => v.digamma().accuracy(),
-            "eint" if v != 0.0 => v.eint().accuracy(),
-            "log" if v > 0.0 => v.log2().accuracy(),
-            "logx" if v > 0.0 => v.log10().accuracy(),
-            "cos" => v.cos().accuracy(),
-            "sin" => v.sin().accuracy(),
-            "tan" => v.tan().accuracy(),
-            "sec" => v.sec().accuracy(),
-            "csc" if v != 0.0 => v.csc().accuracy(),
-            "cot" if v != 0.0 => v.cot().accuracy(),
-            "cosh" => v.cosh().accuracy(),
-            "sinh" => v.sinh().accuracy(),
-            "tanh" => v.tanh().accuracy(),
-            "ceil" => v.ceil().accuracy(),
-            "floor" => v.floor().accuracy(),
-            "frac" => v.fract().accuracy(),
-            "sgn" => v.signum().accuracy(),
-            "recip" if v != 0.0 => v.recip().accuracy(),
-            "csch" if v != 0.0 => v.csch().accuracy(),
-            "sech" => v.sech().accuracy(),
-            "coth" if v != 0.0 => v.coth().accuracy(),
-            "acos" if v >= -1.0 && v <= 1.0 => v.acos().accuracy(),
-            "asin" if v >= -1.0 && v <= 1.0 => v.asin().accuracy(),
-            "atan" => v.atan().accuracy(),
-            "acosh" if v >= 1.0 => v.acosh().accuracy(),
-            "asinh" => v.asinh().accuracy(),
-            "atanh" if v > -1.0 && v < 1.0 => v.atanh().accuracy(),
-            "cbrt" => v.cbrt().accuracy(),
-            "sqrt" if v >= 0.0 => v.sqrt().accuracy(),
-            "fac" => {
-                let to_u32 = v.to_u32_saturating().unwrap();
-                let fac = Float::factorial(to_u32);
-                Float::with_val(2560, fac).accuracy()
-            },
-            _ => Err(CalcError::ParameterError)
-        }
-    }
-
     fn extract(&self, n: usize, i: usize) -> Result<Float, CalcError> {
         match Float::parse(&self[n..i]) {
             Ok(valid) => Float::with_val(2560, valid).accuracy(),
@@ -352,10 +377,10 @@ impl CalcError {
 impl Calculator {
     pub fn new() -> Self {
         Self {
-            numbers: Vec::new(),
-            function: HashMap::new(),
-            operator: Vec::new(),
             state: State::Initial,
+            numbers: Vec::with_capacity(32),
+            function: vec![None; 32],
+            operator: Vec::with_capacity(32),
             marker: Marker::Init,
         }
     }
@@ -363,7 +388,7 @@ impl Calculator {
     fn reset(&mut self, result: Float) -> Float {
         self.numbers.clear();
         self.state = State::Initial;
-        self.function.clear();
+        self.function.fill(None);
         self.marker = Marker::Init;
         self.operator.clear();
         result
@@ -372,7 +397,7 @@ impl Calculator {
     pub fn run(&mut self, expr: &String) -> Result<Float, CalcError> {
         let expr = format!("{}=", expr);
         let mut locat: usize = 0;
-        let mut bracket: u32 = 0;
+        let mut bracket: usize = 0;
 
         for (index, &valid) in expr.as_bytes().iter().enumerate() {
             match valid {
@@ -423,11 +448,11 @@ impl Calculator {
 
                 ch @ b'(' => {
                     if matches!(self.marker, Marker::Func) {
-                        let valid = expr[locat..index].to_owned();
-                        if MATH.binary_search(&valid.as_str()).is_ok() {
-                            self.function.insert(bracket+1, valid);
+                        let name = &expr[locat..index];
+                        if let Some(&func_ptr) = MATH.get(name) {
+                            self.function[bracket+1] = Some(func_ptr);
                         } else {
-                            return Err(CalcError::ExpressionError);
+                            return Err(CalcError::FunctionUndefined);
                         }
                     }
 
@@ -436,7 +461,7 @@ impl Calculator {
                             self.operator.push(ch);
                             locat = index + 1;
                             self.marker = Marker::LParen;
-                            bracket = bracket + 1;
+                            bracket += 1;
                             continue;
                         }
                     }
@@ -458,15 +483,15 @@ impl Calculator {
                                 self.numbers.push(value);
                             }
 
-                            if let Some(fun) = self.function.remove(&bracket) {
-                                let value = fun.math(self.numbers.pop().unwrap())?;
-                                self.numbers.push(value);
+                            if let Some(func) = self.function[bracket].take() {
+                                let value = self.numbers.pop().unwrap();
+                                self.numbers.push(func(value)?);
                             }
 
                             locat = index + 1;
                             self.operator.pop();
                             self.marker = Marker::RParen;
-                            bracket = bracket - 1;
+                            bracket -= 1;
                             continue;
                         }
                     }

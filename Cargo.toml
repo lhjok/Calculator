@@ -1,12 +1,16 @@
 [package]
 name = "calc"
-version = "1.7.3"
+version = "1.7.5"
 authors = ["lhjok <lhjok@live.cn>"]
 edition = "2021"
 
 [dependencies]
 once_cell = "1.18.0"
 textwrap = "0.16.0"
+
+[dependencies.phf]
+version = "0.13.1"
+features = ["macros"]
 
 [dependencies.rug]
 version = "1.28.1"
