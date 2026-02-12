@@ -137,50 +137,39 @@ impl Bignum for Float {
 
 impl Other for String {
     fn parse_rug_raw(&self) -> (bool, Vec<u8>, i32) {
-        // 将科学计数法拆分成（符号、数字、指数）
         let bytes = self.as_bytes();
         let is_neg = bytes.starts_with(&[b'-']);
         let start = if is_neg { 1 } else { 0 };
-        // 找到科学计数(e)的位置
         let e_pos = bytes.iter().position(|&b| b == b'e');
         let end = e_pos.unwrap_or(bytes.len());
         let mantissa = &bytes[start..end];
-        // 创建一个等同大小的数字缓冲区
         let mut digits = Vec::with_capacity(mantissa.len());
         let mut dot_pos = None;
-        // 遍历和添加数字并定位点的位置
         for (index, &byte) in mantissa.iter().enumerate() {
             if byte == b'.' {
                 dot_pos = Some(index as i32);
             } else { digits.push(byte); }
         }
-        // 找出(e)后面的数字
         let raw_exp: i32 = e_pos.map(|pos|{
             self[pos+1..].parse().unwrap_or(0)
         }).unwrap_or(0);
-        // 确保小数点位置逻辑统一
         let adj_exp = dot_pos.map(|pos| raw_exp+pos)
         .unwrap_or(raw_exp+digits.len() as i32);
         (is_neg, digits, adj_exp)
     }
 
     fn to_fixed_clean(&self) -> Result<String, CalcError> {
-        // 将科学计数法拆分成（符号、数字、指数）
         let (negative, digits, exp) = self.parse_rug_raw();
-        // 创建一个计算好的缓冲区
         let mut cursor = 0;
         let digits_len = digits.len();
         let exp_abs = (exp.unsigned_abs()+2) as usize;
         let mut buf = vec![b'0'; digits_len+exp_abs];
-        // 检查当前是否为负数
         if negative {
-            buf[cursor] = b'-';  // 首位添加符号
+            buf[cursor] = b'-';
             cursor += 1;
         }
-        // 记录小数点所在位置
         let dot_pos: Option<usize>;
-        // 按顺序移动cursor值
-        if exp <= 0 {   // 当指数小于等于0时
+        if exp <= 0 {
             buf[cursor..cursor+2]
             .copy_from_slice(b"0.");
             dot_pos = Some(cursor+1);
@@ -191,7 +180,6 @@ impl Other for String {
             .copy_from_slice(&digits);
             cursor += digits_len;
         } else {
-            // 当指数大于0时，执行如下。
             let dot_idx = exp as usize;
             if dot_idx >= digits_len {
                 buf[cursor..cursor+digits_len]
@@ -213,7 +201,6 @@ impl Other for String {
                 cursor += rem;
             }
         }
-        // 清楚尾部多余的零
         let mut final_len = cursor;
         if let Some(dot) = dot_pos {
             let dec_len = cursor-dot;
@@ -227,37 +214,30 @@ impl Other for String {
                 }
             }
         }
-        // 最后缓冲区转换成字符串
         buf.truncate(final_len);
         Ok(String::from_utf8(buf).unwrap())
     }
 
     fn to_fixed_round(&self, prec: i32) -> Result<String, CalcError> {
-        // 将科学计数法拆分成（符号、数字、指数）
         let (negative, digits, exp) = self.parse_rug_raw();
         let round_idx = (exp+prec) as usize;
-        // 判断四舍五入进位
-        let mut carry = false;   // 进位开关默认关闭
+        let mut carry = false;
         if round_idx < digits.len() && digits[round_idx] >= b'5' {
-            carry = true;   // 打开进位开关
+            carry = true;
         }
-        // 创建一个足够大的缓冲区
         let mut buf = [b'0'; 4096];
-        let mut cursor = 4095;   // 移位倒计数，逆向填充逻辑。
+        let mut cursor = 4095;
         let max_bound = (exp+prec)-1;
         let min_bound = std::cmp::min(0, exp-1);
         for index in (min_bound..=max_bound).rev() {
-            // 只有在(prec>0)且到达exp位置时插入
             if index == exp-1 && prec > 0 {
-                buf[cursor] = b'.';   // 插入小数点
+                buf[cursor] = b'.';
                 cursor -= 1;
             }
-            // 遍历出(digits)单个数字
             let index = index as usize;
             let mut digit = if index < digits.len() {
                 digits[index]
             } else { b'0' };
-            // 关闭进位开关结束进位
             if carry {
                 if digit == b'9' {
                     digit = b'0';
@@ -266,21 +246,17 @@ impl Other for String {
                     carry = false;
                 }
             }
-            // 把单位数添加进缓冲区
             buf[cursor] = digit;
             cursor -= 1;
         }
-        // 循环结束后还有进位则直接补'1'。
         if carry {
             buf[cursor] = b'1';
             cursor -= 1;
         }
-        // 如果有符号则添加到缓冲区
         if negative {
             buf[cursor] = b'-';
             cursor -= 1;
         }
-        // 缓冲区数据转成字符串
         let final_buf = &buf[cursor+1..4096];
         let mut final_len = final_buf.len();
         for index in final_buf.iter().rev() {
