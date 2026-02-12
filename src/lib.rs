@@ -40,10 +40,10 @@ pub enum CalcError {
 }
 
 pub struct Calculator {
-    numbers: Vec<Float>,
-    function: HashMap<u32, String>,
-    operator: Vec<u8>,
     marker: Marker,
+    operator: Vec<u8>,
+    function: HashMap<u32, String>,
+    numbers: Vec<Float>,
     state: State,
 }
 
@@ -52,12 +52,12 @@ static MAX: Lazy<Float> = Lazy::new(||{
     Float::with_val(2560, max)
 });
 
-static MATH: &[&str] = &["abs","acos","acosh","ai",
-"asin","asinh","atan","atanh","cbrt","ceil","cos",
-"cosh","cot","coth","csc","csch","digamma","eint",
-"erf","erfc","exp","expx","expt","fac","floor","frac",
-"gamma","li","ln","log","logx","recip","sec","sech",
-"sgn","sin","sinh","sqrt","tan","tanh","trunc","zeta"];
+static MATH: &[&str] = &[
+"abs","acos","acosh","ai","asin","asinh","atan","atanh",
+"cbrt","ceil","cos","cosh","cot","coth","csc","csch","digamma",
+"eint","erf","erfc","exp","expx","expt","fac","floor","frac",
+"gamma","li","ln","log","logx","recip","sec","sech","sgn",
+"sin","sinh","sqrt","tan","tanh","trunc","zeta"];
 
 trait Symbol {
     fn priority(&self) -> Result<u8, CalcError>;
