@@ -281,7 +281,16 @@ impl Other for String {
             cursor -= 1;
         }
         // 缓冲区数据转成字符串
-        let result = buf[cursor+1..4096].to_vec();
+        let final_buf = &buf[cursor+1..4096];
+        let mut final_len = final_buf.len();
+        for index in final_buf.iter().rev() {
+            match index {
+                b'0' => final_len -= 1,
+                b'.' => { final_len -= 1; break; }
+                _ => break,
+            }
+        }
+        let result = final_buf[..final_len].to_vec();
         Ok(String::from_utf8(result).unwrap())
     }
 
