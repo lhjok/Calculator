@@ -122,8 +122,8 @@ impl Bignum for Float {
 
     fn to_round(&self, digits: Option<usize>) -> Result<String, CalcError> {
         if let Some(precision) = digits {
-            if precision < 2 || precision > 700 {
-                let err = String::from("Set Precision Greater Than 1");
+            if precision < 1 || precision > 700 {
+                let err = String::from("Set Precision Greater Than Equal 1");
                 return Err(CalcError::Custom(err));
             }
         }
