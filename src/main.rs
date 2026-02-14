@@ -91,15 +91,15 @@ fn handle_key(
     match (physical_key, key.clone()) {
         (Physical::Code(code), _) => match code {
             Code::Numpad0 => Some(Message::Digit(String::from("0"))),
-            Code::Numpad1 => Some(Message::Digit(String::from('1'))),
-            Code::Numpad2 => Some(Message::Digit(String::from('2'))),
-            Code::Numpad3 => Some(Message::Digit(String::from('3'))),
-            Code::Numpad4 => Some(Message::Digit(String::from('4'))),
-            Code::Numpad5 => Some(Message::Digit(String::from('5'))),
-            Code::Numpad6 => Some(Message::Digit(String::from('6'))),
-            Code::Numpad7 => Some(Message::Digit(String::from('7'))),
-            Code::Numpad8 => Some(Message::Digit(String::from('8'))),
-            Code::Numpad9 => Some(Message::Digit(String::from('9'))),
+            Code::Numpad1 => Some(Message::Digit(String::from("1"))),
+            Code::Numpad2 => Some(Message::Digit(String::from("2"))),
+            Code::Numpad3 => Some(Message::Digit(String::from("3"))),
+            Code::Numpad4 => Some(Message::Digit(String::from("4"))),
+            Code::Numpad5 => Some(Message::Digit(String::from("5"))),
+            Code::Numpad6 => Some(Message::Digit(String::from("6"))),
+            Code::Numpad7 => Some(Message::Digit(String::from("7"))),
+            Code::Numpad8 => Some(Message::Digit(String::from("8"))),
+            Code::Numpad9 => Some(Message::Digit(String::from("9"))),
             Code::NumpadDecimal => Some(operator(String::from("."))),
             _ => match key {
                 Key::Named(Named::Delete) => if modi.control() {
@@ -210,7 +210,7 @@ impl GCalculator {
                 let expr = oper_repl(self.value.clone());
                 if self.value != "0" {
                     let mut calc = Calculator::new();
-                    match calc.run_round(&expr, Some(7)) {
+                    match calc.run_round(&expr, Some(6)) {
                         Ok(valid) => {
                             self.value = valid.clone();
                             self.show = trunc(valid)
