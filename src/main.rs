@@ -1,38 +1,36 @@
 use calc::Calculator;
 use once_cell::sync::Lazy;
-use iced::executor::Default;
 use iced::window::Position;
 use textwrap::fill;
 
 use iced::{
     keyboard::{
-        self, KeyCode,
-        Modifiers
+        self, key::{
+            Key, Named,
+            Physical, Code,
+        }, Modifiers,
     },
-    subscription,
-    Background, Font, Settings,
+    Background, Font, Padding,
     Subscription, Element, Theme,
-    Application, Command, Color,
-    Alignment, Length, Pixels,
-    font::{ Weight, Family },
-    event::{ Event, Status },
-    theme::{ self, Container },
+    Task, Color, Alignment, Length,
+    font::{ Weight, Family }, Pixels,
+    event::{ self, Event, Status },
     window::{ self, icon },
     alignment::{
         Horizontal,
-        Vertical
+        Vertical,
     }
 };
 
 use iced::widget::{
     column, row, rule, text,
-    vertical_space, scrollable,
-    button, container, Rule,
-    text::LineHeight,
-    container::Appearance,
+    space, scrollable, Id,
+    button, container,
+    text::LineHeight, operation,
+    container::Style,
     scrollable::{
-        Id, Properties,
-        Direction, RelativeOffset
+        Scrollbar, Direction,
+        RelativeOffset,
     }
 };
 
@@ -84,79 +82,68 @@ fn oper_repl(repl: String) -> String {
         .replace("γ", "E")
 }
 
-fn handle_key(key: KeyCode, modi: Modifiers)
-    -> Option<Message> {
+fn handle_key(
+    key: Key, physical_key: Physical, modi: Modifiers,
+) -> Option<Message> {
     let operator = |oper: String| -> Message {
         Message::Operator(oper.clone(), oper)
     };
-
-    match key {
-        KeyCode::P if modi.control() =>
-            Some(operator(String::from("π"))),
-        KeyCode::Y if modi.control() =>
-            Some(operator(String::from("γ"))),
-        KeyCode::Delete => if modi.control() {
-            Some(operator(String::from("D")))
-        } else {
-            Some(operator(String::from("C")))
+    match (physical_key, key.clone()) {
+        (Physical::Code(code), _) => match code {
+            Code::Numpad0 => Some(Message::Digit(String::from("0"))),
+            Code::Numpad1 => Some(Message::Digit(String::from('1'))),
+            Code::Numpad2 => Some(Message::Digit(String::from('2'))),
+            Code::Numpad3 => Some(Message::Digit(String::from('3'))),
+            Code::Numpad4 => Some(Message::Digit(String::from('4'))),
+            Code::Numpad5 => Some(Message::Digit(String::from('5'))),
+            Code::Numpad6 => Some(Message::Digit(String::from('6'))),
+            Code::Numpad7 => Some(Message::Digit(String::from('7'))),
+            Code::Numpad8 => Some(Message::Digit(String::from('8'))),
+            Code::Numpad9 => Some(Message::Digit(String::from('9'))),
+            Code::NumpadDecimal => Some(operator(String::from("."))),
+            _ => match key {
+                Key::Named(Named::Delete) => if modi.control() {
+                    Some(operator(String::from("D")))
+                } else { Some(operator(String::from("C"))) },
+                Key::Character(key) => { match key.as_str() {
+                    "(" => Some(operator(String::from("("))),
+                    ")" => Some(operator(String::from(")"))),
+                    "+" => Some(operator(String::from("+"))),
+                    "-" => Some(operator(String::from("-"))),
+                    "*" => Some(operator(String::from("×"))),
+                    "/" => Some(operator(String::from("÷"))),
+                    "P" if modi.control() => Some(operator(String::from("π"))),
+                    "Y" if modi.control() => Some(operator(String::from("γ"))),
+                    "0" => if modi.control() {
+                        Some(operator(String::from(")")))
+                    } else { Some(Message::Digit(String::from("0"))) },
+                    "1" => Some(Message::Digit(String::from("1"))),
+                    "2" => Some(Message::Digit(String::from("2"))),
+                    "3" => Some(Message::Digit(String::from("3"))),
+                    "4" => Some(Message::Digit(String::from("4"))),
+                    "5" => if modi.control() {
+                        Some(operator(String::from("%")))
+                    } else { Some(Message::Digit(String::from("5"))) },
+                    "6" => if modi.control() {
+                        Some(operator(String::from("^")))
+                    } else { Some(Message::Digit(String::from("6"))) },
+                    "7" => Some(Message::Digit(String::from("7"))),
+                    "8" => Some(Message::Digit(String::from("8"))),
+                    "9" => if modi.control() {
+                        Some(operator(String::from("(")))
+                    } else { Some(Message::Digit(String::from("9"))) },
+                    "." => Some(operator(String::from("."))),
+                    "=" => Some(operator(String::from("="))),
+                    _ => None,
+                }},
+                Key::Named(Named::Enter) =>
+                    Some(operator(String::from("="))),
+                Key::Named(Named::Backspace) =>
+                    Some(operator(String::from("\u{25C4}"))),
+                _ => None,
+            },
         },
-        KeyCode::LBracket =>
-            Some(operator(String::from("("))),
-        KeyCode::RBracket =>
-            Some(operator(String::from(")"))),
-        KeyCode::Plus | KeyCode::NumpadAdd =>
-            Some(operator(String::from("+"))),
-        KeyCode::Minus | KeyCode::NumpadSubtract =>
-            Some(operator(String::from("-"))),
-        KeyCode::Asterisk | KeyCode::NumpadMultiply =>
-            Some(operator(String::from("×"))),
-        KeyCode::Slash | KeyCode::NumpadDivide =>
-            Some(operator(String::from("÷"))),
-        KeyCode::Key0 | KeyCode::Numpad0 =>
-            if modi.control() {
-                Some(operator(String::from(")")))
-            } else {
-                Some(Message::Digit(String::from("0")))
-            },
-        KeyCode::Key1 | KeyCode::Numpad1 =>
-            Some(Message::Digit(String::from("1"))),
-        KeyCode::Key2 | KeyCode::Numpad2 =>
-            Some(Message::Digit(String::from("2"))),
-        KeyCode::Key3 | KeyCode::Numpad3 =>
-            Some(Message::Digit(String::from("3"))),
-        KeyCode::Key4 | KeyCode::Numpad4 =>
-            Some(Message::Digit(String::from("4"))),
-        KeyCode::Key5 | KeyCode::Numpad5 =>
-            if modi.control() {
-                Some(operator(String::from("%")))
-            } else {
-                Some(Message::Digit(String::from("5")))
-            },
-        KeyCode::Key6 | KeyCode::Numpad6 =>
-            if modi.control() {
-                Some(operator(String::from("^")))
-            } else {
-                Some(Message::Digit(String::from("6")))
-            },
-        KeyCode::Key7 | KeyCode::Numpad7 =>
-            Some(Message::Digit(String::from("7"))),
-        KeyCode::Key8 | KeyCode::Numpad8 =>
-            Some(Message::Digit(String::from("8"))),
-        KeyCode::Key9 | KeyCode::Numpad9 =>
-            if modi.control() {
-                Some(operator(String::from("(")))
-            } else {
-                Some(Message::Digit(String::from("9")))
-            },
-        KeyCode::Period | KeyCode::NumpadDecimal =>
-            Some(operator(String::from("."))),
-        KeyCode::Equals | KeyCode::NumpadEquals =>
-            Some(operator(String::from("="))),
-        KeyCode::Enter | KeyCode::NumpadEnter =>
-            Some(operator(String::from("="))),
-        KeyCode::Backspace =>
-            Some(operator(String::from("\u{25C4}"))),
-        _ => None
+        _ => None,
     }
 }
 
@@ -165,14 +152,12 @@ const ICON: &[u8] = include_bytes!("../assets/calculator.png");
 
 const CONSOLA_NORMAL: Font = Font {
     family: Family::Name("Consolas"),
-    monospaced: true,
     ..Font::DEFAULT
 };
 
 const CONSOLA_BOLD: Font = Font {
     family: Family::Name("Consolas"),
     weight: Weight::Bold,
-    monospaced: true,
     ..Font::DEFAULT
 };
 
@@ -187,6 +172,18 @@ impl CalcResult {
         let result = self.result.as_ref();
         result.map(|value| value.1.to_string())
               .unwrap_or_default()
+    }
+}
+
+impl Default for GCalculator {
+    fn default() -> Self {
+        GCalculator {
+            show: String::from("0"),
+            value: String::from("0"),
+            history: Vec::new(),
+            state: State::None,
+            scroll: RelativeOffset::START
+        }
     }
 }
 
@@ -283,37 +280,16 @@ impl GCalculator {
     }
 }
 
-impl Application for GCalculator {
-    type Executor = Default;
-    type Message = Message;
-    type Theme = Theme;
-    type Flags = ();
-
-    fn new(_: Self::Flags) ->
-        (GCalculator, Command<Self::Message>) {
-        (GCalculator {
-            show: String::from("0"),
-            value: String::from("0"),
-            history: Vec::new(),
-            state: State::None,
-            scroll: RelativeOffset::START
-        }, Command::none())
-    }
-
-    fn title(&self) -> String {
-        String::from("Advanced Calculator")
-    }
-
-    fn update(&mut self, msg: Self::Message)
-        -> Command<Self::Message> {
+impl GCalculator {
+    fn update(&mut self, msg: Message) -> Task<Message> {
         match msg {
             Message::Digit(num) => {
                 self.func_digit_event(num);
-                Command::none()
+                Task::none()
             }
             Message::Func(func) => {
                 self.func_digit_event(func);
-                Command::none()
+                Task::none()
             }
             Message::Operator(op, lb) => {
                 let expr = self.value.clone();
@@ -333,22 +309,22 @@ impl Application for GCalculator {
                     }
                     if self.history.len() >= 1 {
                         self.scroll = RelativeOffset::END;
-                        return scrollable::snap_to(
+                        return operation::snap_to(
                             SCROLL.clone(),
                             self.scroll
                         )
                     }
                 }
-                Command::none()
+                Task::none()
             }
         }
     }
 
-    fn view(&self) -> Element<'_, Self::Message> {
+    fn view(&self) -> Element<'_, Message> {
         let custom_rule: for<'a> fn(&'a _) -> _;
-        custom_rule = |_: &Theme| -> rule::Appearance {
-            rule::Appearance {
-                width: 1,
+        custom_rule = |_: &Theme| -> rule::Style {
+            rule::Style {
+                snap: true,
                 radius: 0.0.into(),
                 color: Color::from([0.3, 0.3, 0.3]),
                 fill_mode: rule::FillMode::Full,
@@ -356,38 +332,39 @@ impl Application for GCalculator {
         };
 
         let custom_main: for<'a> fn(&'a _) -> _;
-        custom_main = |_: &Theme| -> Appearance {
+        custom_main = |_: &Theme| -> Style {
             let color = Color::from([0.2, 0.2, 0.2]);
-            Appearance {
+            Style {
                 background: Some(Background::Color(color)),
-                ..Appearance::default()
+                ..Style::default()
             }
         };
 
         let list_item = |d: &CalcResult, i: usize|
-            -> Element<Self::Message> {
+            -> Element<Message> {
             column![
                 if i == 0 { column![
-                    vertical_space(5)
+                    space::vertical().height(5.0)
                 ]} else { column![
-                    Rule::horizontal(1)
-                        .style(theme::Rule::from(custom_rule)),
-                    vertical_space(5)
+                    rule::horizontal(1)
+                        .style(custom_rule),
+                    space::vertical().height(5.0)
                 ]},
                 text(format!("{}=", fill(&d.express(), 60)))
-                    .size(21)
+                    .size(21.0)
                     .width(Length::Fill)
                     .height(Length::Shrink)
                     .font(CONSOLA_NORMAL)
                     .line_height(LineHeight::Absolute(Pixels(23.0))),
                 text(format!("{}", fill(&d.result(), 60)))
-                    .size(21)
+                    .size(21.0)
                     .width(Length::Fill)
                     .height(Length::Shrink)
                     .font(CONSOLA_BOLD)
-                    .style(Color::from_rgb8(123, 104, 238))
-                    .line_height(LineHeight::Absolute(Pixels(23.0))),
-                vertical_space(3)
+                    .style(|_theme| text::Style {
+                        color: Some(Color::from_rgb8(123, 104, 238)),
+                    }).line_height(LineHeight::Absolute(Pixels(23.0))),
+                space::vertical().height(3.0)
             ].into()
         };
 
@@ -400,94 +377,120 @@ impl Application for GCalculator {
             )
         } else {
             column![
-                vertical_space(2),
-                text("No calculation history")
-                    .size(19)
+                space::vertical().height(2.0),
+                text("No Calculation History")
+                    .size(19.0)
                     .font(CONSOLA_BOLD)
-                    .style(Color::from([0.35, 0.35, 0.35]))
+                    .style(|_theme| text::Style {
+                        color: Some(Color::from([0.35, 0.35, 0.35])),
+                    })
             ].into()
         };
 
         let result_main = container(
             column![
                 text(self.show.clone())
-                    .size(28)
+                    .size(28.0)
                     .height(Length::Shrink)
                     .font(CONSOLA_BOLD)
-                    .horizontal_alignment(Horizontal::Right)
-                    .vertical_alignment(Vertical::Center)
+                    .align_x(Horizontal::Right)
+                    .align_y(Vertical::Center)
             ].width(Length::Fill)
              .height(60)
-             .align_items(Alignment::End)
-             .padding([17, 11, 11, 11])
+             .align_x(Alignment::End)
+             .padding(Padding {
+                top: 17.0, right: 11.0,
+                bottom: 11.0, left: 11.0,
+            })
         ).width(Length::Fill)
-         .style(Container::from(custom_main));
+         .style(custom_main);
 
         let display = Element::from(
             column![
                 scrollable(
                     column![history_list]
                         .width(Length::Fill)
-                        .align_items(Alignment::Start)
-                        .padding([11, 11, 0, 11])
-                ).height(274)
+                        .align_x(Alignment::Start)
+                        .padding(Padding {
+                            top: 11.0, right: 11.0,
+                            bottom: 0.0, left: 11.0,
+                        })
+                ).height(274.0)
                  .direction(Direction::Vertical(
-                     Properties::new()
-                         .width(2)
-                         .scroller_width(2)
-                         .margin(0)
+                    Scrollbar::default()
+                        .width(2.0)
+                        .scroller_width(2.0)
+                        .margin(0.0)
                  )).id(SCROLL.clone()),
                 result_main
             ].width(Length::Fill)
         );
 
-        let digit = |num: char| -> Element<Self::Message> {
+        let digit = |num: char| -> Element<Message> {
             let num = String::from(num);
             let digit = text(num.clone())
-                .size(24)
+                .size(24.0)
                 .font(CONSOLA_BOLD)
-                .horizontal_alignment(Horizontal::Center)
-                .vertical_alignment(Vertical::Center);
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .align_x(Horizontal::Center)
+                .align_y(Vertical::Center);
             let button = button(digit)
                 .width(Length::Fill)
+                .height(Length::Fill)
                 .on_press(Message::Digit(num))
-                .padding([4, 0, 0, 0]);
+                .padding(Padding {
+                    top: 4.0, right: 0.0,
+                    bottom: 0.0, left: 0.0,
+                });
             Element::from(button)
         };
 
-        let oper_label = |op: char, lb: char, sz: u16, pd: u16|
-            -> Element<Self::Message> {
+        let oper_label = |op: char, lb: char, sz: f32, pd: f32|
+            -> Element<Message> {
             let op = String::from(op);
             let lb = String::from(lb);
             let oper = text(op.clone())
                 .size(sz)
                 .font(CONSOLA_BOLD)
-                .horizontal_alignment(Horizontal::Center)
-                .vertical_alignment(Vertical::Center);
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .align_x(Horizontal::Center)
+                .align_y(Vertical::Center);
             let button = button(oper)
                 .width(Length::Fill)
+                .height(Length::Fill)
                 .on_press(Message::Operator(op, lb))
-                .padding([pd, 0, 0, 0]);
+                .padding(Padding {
+                    top: pd, right: 0.0,
+                    bottom: 0.0, left: 0.0,
+                });
             Element::from(button)
         };
 
-        let operator = |op: char, sz: u16, pd: u16|
-            -> Element<Self::Message> {
+        let operator = |op: char, sz: f32, pd: f32|
+            -> Element<Message> {
             oper_label(op.clone(), op, sz, pd)
         };
 
-        let func_label = |fun: &str, lb: &str|
-            -> Element<Self::Message> {
+        let func_label = |fun: &'static str, lb: &'static str|
+            -> Element<Message> {
             let lb = String::from(lb);
             let func = text(fun)
-                .size(17)
+                .size(17.0)
                 .font(CONSOLA_BOLD)
-                .horizontal_alignment(Horizontal::Center)
-                .vertical_alignment(Vertical::Center);
+                .width(Length::Fill)
+                .height(Length::Fill)
+                .align_x(Horizontal::Center)
+                .align_y(Vertical::Center);
             let button = button(func)
                 .width(Length::Fill)
+                .height(Length::Fill)
                 .on_press(Message::Func(lb))
-                .padding([3, 0, 0, 0]);
+                .padding(Padding {
+                    top: 3.0, right: 0.0,
+                    bottom: 0.0, left: 0.0,
+                });
             Element::from(button)
         };
 
@@ -495,13 +498,13 @@ impl Application for GCalculator {
             display,
             column![
                 row![
-                    func_label("Cot", "cot("), func_label("Coth", "coth"),
+                    func_label("Cot", "cot("), func_label("Coth", "coth("),
                     func_label("Ai", "ai("), func_label("Cbrt", "cbrt("),
                     func_label("Li2", "li("), func_label("Erfc", "erfc("),
                     func_label("Sec", "sec("), func_label("Csc", "csc("),
                     func_label("Csch", "csch("),func_label("Eint", "eint("),
                     func_label("Trunc", "trunc("),
-                ].height(36).spacing(3),
+                ].height(36.0).spacing(3.0),
                 row![
                     func_label("Recip", "recip("), func_label("Erf", "erf("),
                     func_label("Acosh", "acosh("), func_label("Sgn", "sgn("),
@@ -509,55 +512,51 @@ impl Application for GCalculator {
                     func_label("Atanh", "atanh("), func_label("Sech", "sech("),
                     func_label("Ceil", "ceil("), func_label("Floor", "floor("),
                     func_label("Zeta", "zeta("),
-                ].height(36).spacing(3),
+                ].height(36.0).spacing(3.0),
                 row![
                     digit('7'), digit('8'), digit('9'),
-                    operator('÷', 26, 3), operator('\u{25C4}', 27, 3),
-                    operator('C', 24, 3), func_label("Cos", "cos("),
+                    operator('÷', 26.0, 3.0), operator('\u{25C4}', 27.0, 3.0),
+                    operator('C', 24.0, 3.0), func_label("Cos", "cos("),
                     func_label("Sin", "sin("), func_label("Tan", "tan("),
                     func_label("Acos", "acos("), func_label("Gamma", "gamma("),
-                ].height(45).spacing(3),
+                ].height(45.0).spacing(3.0),
                 row![
                     digit('4'), digit('5'), digit('6'),
-                    operator('×', 26, 3), operator('(', 24, 3),
-                    operator(')', 24, 3), func_label("Cosh", "cosh("),
+                    operator('×', 26.0, 3.0), operator('(', 24.0, 3.0),
+                    operator(')', 24.0, 3.0), func_label("Cosh", "cosh("),
                     func_label("Sinh", "sinh("), func_label("Tanh", "tanh("),
                     func_label("Atan", "atan("), func_label("DiGam", "digamma("),
-                ].height(45).spacing(3),
+                ].height(45.0).spacing(3.0),
                 row![
                     digit('1'), digit('2'), digit('3'),
-                    oper_label('−', '-', 26, 3), operator('π', 24, 3),
-                    oper_label('\u{039B}', '^', 21, 3), func_label("Sqrt", "sqrt("),
+                    oper_label('−', '-', 26.0, 3.0), operator('π', 24.0, 3.0),
+                    oper_label('\u{039B}', '^', 21.0, 3.0), func_label("Sqrt", "sqrt("),
                     func_label("Log2", "log("), func_label("Log10", "logx("),
                     func_label("Asin", "asin("), func_label("Exp10", "expx("),
-                ].height(45).spacing(3),
+                ].height(45.0).spacing(3.0),
                 row![
-                    operator('%', 24, 5), digit('0'), operator('.', 24, 0),
-                    operator('+', 26, 3), operator('γ', 23, 0),
-                    operator('=', 25, 3), func_label("Fac", "fac("),
+                    operator('%', 24.0, 5.0), digit('0'), operator('.', 24.0, 0.0),
+                    operator('+', 26.0, 3.0), operator('γ', 23.0, 0.0),
+                    operator('=', 25.0, 3.0), func_label("Fac", "fac("),
                     func_label("Abs", "abs("), func_label("Ln", "ln("),
                     func_label("Exp", "exp("), func_label("Exp2", "expt("),
-                ].height(45).spacing(3),
-            ].padding(3).spacing(3)
+                ].height(45.0).spacing(3.0),
+            ].padding(3.0).spacing(3.0)
         ].into()
     }
 
-    fn theme(&self) -> Theme {
-        Theme::Dark
-    }
-
-    fn subscription(&self) -> Subscription<Self::Message> {
-        subscription::events_with(|event, status| {
+    fn subscription(&self) -> Subscription<Message> {
+        event::listen_with(|event, status, _id| {
             if let Status::Captured = status {
                 return None;
             }
             match event {
                 Event::Keyboard(
                     keyboard::Event::KeyPressed {
-                        modifiers,
-                        key_code
+                        modifiers, key,
+                        physical_key, ..
                     }
-                ) => handle_key(key_code, modifiers),
+                ) => handle_key(key, physical_key, modifiers),
                 _ => None
             }
         })
@@ -565,18 +564,19 @@ impl Application for GCalculator {
 }
 
 pub fn main() -> iced::Result {
-    GCalculator::run(Settings{
-        id: Some("Calculator".to_string()),
-        window: window::Settings {
-            position: Position::Centered,
-            max_size: Some((715, 607)),
-            resizable: false,
-            icon: Some(icon::from_file_data(
-                ICON, None
-            ).expect("Failed to load icon")),
-            ..window::Settings::default()
-        },
-        antialiasing: true,
-        ..Settings::default()
-    })
+    iced::application(
+        GCalculator::default,
+        GCalculator::update,
+        GCalculator::view,
+    ).window(window::Settings {
+        size: [715.0, 607.0].into(),
+        position: Position::Centered,
+        resizable: false,
+        icon: icon::from_file_data(ICON, None).ok(),
+        ..window::Settings::default()
+    }).antialiasing(true)
+    .title(|_: &GCalculator| String::from("Advanced Calculator"))
+    .theme(|_: &GCalculator| Theme::Dark)
+    .subscription(GCalculator::subscription)
+    .run()
 }
