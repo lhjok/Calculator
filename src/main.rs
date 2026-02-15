@@ -15,7 +15,7 @@ use iced::{
     Task, Color, Alignment, Length,
     font::{ Weight, Family }, Pixels,
     event::{ self, Event, Status },
-    window::{ self, icon },
+    window::{ self, icon, icon::Icon },
     alignment::{
         Horizontal,
         Vertical,
@@ -61,7 +61,7 @@ enum Message {
     Func(String)
 }
 
-fn trunc(lens: String) -> String {
+fn trunc(lens: &str) -> String {
     let valid = lens
         .chars()
         .into_iter()
@@ -75,11 +75,19 @@ fn trunc(lens: String) -> String {
     }
 }
 
-fn oper_repl(repl: String) -> String {
-    repl.replace("÷", "/")
-        .replace("×", "*")
-        .replace("π", "P")
-        .replace("γ", "E")
+fn oper_repl(repl: &str) -> String {
+    let len = repl.len();
+    let mut result = String::with_capacity(len);
+    for char in repl.chars() {
+        match char {
+            '÷' => result.push('/'),
+            '×' => result.push('*'),
+            'π' => result.push('P'),
+            'γ' => result.push('E'),
+            _ => result.push(char),
+        }
+    }
+    result
 }
 
 fn handle_key(
@@ -165,13 +173,13 @@ impl CalcResult {
     fn express(&self) -> String {
         let express = self.result.as_ref();
         express.map(|value| value.0.to_string())
-               .unwrap_or_default()
+            .unwrap_or_default()
     }
 
     fn result(&self) -> String {
         let result = self.result.as_ref();
         result.map(|value| value.1.to_string())
-              .unwrap_or_default()
+            .unwrap_or_default()
     }
 }
 
@@ -180,9 +188,9 @@ impl Default for GCalculator {
         GCalculator {
             show: String::from("0"),
             value: String::from("0"),
+            scroll: RelativeOffset::START,
             history: Vec::new(),
             state: State::None,
-            scroll: RelativeOffset::START
         }
     }
 }
@@ -202,18 +210,18 @@ impl GCalculator {
                     self.show = String::from("0");
                 } else {
                     self.value.pop();
-                    self.show = trunc(self.value.clone());
+                    self.show = trunc(self.value.as_str());
                 }
             },
             "=" => {
                 self.state = State::Set;
-                let expr = oper_repl(self.value.clone());
+                let expr = oper_repl(self.value.as_str());
                 if self.value != "0" {
                     let mut calc = Calculator::new();
                     match calc.run_round(&expr, Some(6)) {
                         Ok(valid) => {
                             self.value = valid.clone();
-                            self.show = trunc(valid)
+                            self.show = trunc(valid.as_str())
                         },
                         Err(msg) => {
                             self.value = String::from("0");
@@ -230,7 +238,7 @@ impl GCalculator {
                     self.state = State::None;
                 } else {
                     self.value += &label;
-                    self.show = trunc(self.value.clone());
+                    self.show = trunc(self.value.as_str());
                 }
             },
             ch @ "(" | ch @ "−" | ch @ "π" | ch @ "γ" => {
@@ -238,7 +246,7 @@ impl GCalculator {
                     self.state = State::None;
                     if ch == "−" && self.value != "0" {
                         self.value += &label;
-                        self.show = trunc(self.value.clone());
+                        self.show = trunc(self.value.as_str());
                     } else {
                         self.value = label.clone();
                         self.show = label.clone();
@@ -248,17 +256,17 @@ impl GCalculator {
                     self.show = label.clone();
                 } else {
                     self.value += &label;
-                    self.show = trunc(self.value.clone());
+                    self.show = trunc(self.value.as_str());
                 }
             },
             _ => {
                 if let State::Set = self.state {
                     self.value += &label;
-                    self.show = trunc(self.value.clone());
+                    self.show = trunc(self.value.as_str());
                     self.state = State::None;
                 } else {
                     self.value += &label;
-                    self.show = trunc(self.value.clone());
+                    self.show = trunc(self.value.as_str());
                 }
             }
         }
@@ -275,7 +283,7 @@ impl GCalculator {
             self.show = label.clone();
         } else {
             self.value += &label;
-            self.show = trunc(self.value.clone());
+            self.show = trunc(self.value.as_str());
         }
     }
 }
@@ -346,7 +354,7 @@ impl GCalculator {
                 if i == 0 { column![
                     space::vertical().height(5.0)
                 ]} else { column![
-                    rule::horizontal(1)
+                    rule::horizontal(1.0)
                         .style(custom_rule),
                     space::vertical().height(5.0)
                 ]},
@@ -396,7 +404,7 @@ impl GCalculator {
                     .align_x(Horizontal::Right)
                     .align_y(Vertical::Center)
             ].width(Length::Fill)
-             .height(60)
+             .height(60.0)
              .align_x(Alignment::End)
              .padding(Padding {
                 top: 17.0, right: 11.0,
@@ -563,6 +571,13 @@ impl GCalculator {
     }
 }
 
+fn load_icon_strictly() -> Option<Icon> {
+    let img = image::load_from_memory(ICON).ok()?;
+    let rgba = img.to_rgba8();
+    let (width, height) = rgba.dimensions();
+    icon::from_rgba(rgba.into_raw(), width, height).ok()
+}
+
 pub fn main() -> iced::Result {
     iced::application(
         GCalculator::default,
@@ -572,7 +587,7 @@ pub fn main() -> iced::Result {
         size: [715.0, 607.0].into(),
         position: Position::Centered,
         resizable: false,
-        icon: icon::from_file_data(ICON, None).ok(),
+        icon: load_icon_strictly(),
         ..window::Settings::default()
     }).antialiasing(true)
     .title(|_: &GCalculator| String::from("Advanced Calculator"))
