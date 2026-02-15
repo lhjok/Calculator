@@ -196,99 +196,6 @@ impl Default for GCalculator {
 }
 
 impl GCalculator {
-    fn oper_event(&mut self, op: &str, label: String) -> bool {
-        match op {
-            "D" => self.history = Vec::new(),
-            "C" => {
-                self.value = String::from("0");
-                self.show = String::from("0");
-            },
-            "\u{25C4}" => {
-                if self.value.len() == 1 ||
-                    self.value == "π" || self.value == "γ" {
-                    self.value = String::from("0");
-                    self.show = String::from("0");
-                } else {
-                    self.value.pop();
-                    self.show = trunc(self.value.as_str());
-                }
-            },
-            "=" => {
-                self.state = State::Set;
-                let expr = oper_repl(self.value.as_str());
-                if self.value != "0" {
-                    let mut calc = Calculator::new();
-                    match calc.run_round(&expr, Some(6)) {
-                        Ok(valid) => {
-                            self.value = valid.clone();
-                            self.show = trunc(valid.as_str())
-                        },
-                        Err(msg) => {
-                            self.value = String::from("0");
-                            self.show = msg.to_string()
-                        }
-                    }
-                    return true;
-                }
-            },
-            "." => {
-                if let State::Set = self.state {
-                    self.value = String::from("0");
-                    self.show = String::from("0");
-                    self.state = State::None;
-                } else {
-                    self.value += &label;
-                    self.show = trunc(self.value.as_str());
-                }
-            },
-            ch @ "(" | ch @ "−" | ch @ "π" | ch @ "γ" => {
-                if let State::Set = self.state {
-                    self.state = State::None;
-                    if ch == "−" && self.value != "0" {
-                        self.value += &label;
-                        self.show = trunc(self.value.as_str());
-                    } else {
-                        self.value = label.clone();
-                        self.show = label.clone();
-                    }
-                } else if self.value == "0" {
-                    self.value = label.clone();
-                    self.show = label.clone();
-                } else {
-                    self.value += &label;
-                    self.show = trunc(self.value.as_str());
-                }
-            },
-            _ => {
-                if let State::Set = self.state {
-                    self.value += &label;
-                    self.show = trunc(self.value.as_str());
-                    self.state = State::None;
-                } else {
-                    self.value += &label;
-                    self.show = trunc(self.value.as_str());
-                }
-            }
-        }
-        false
-    }
-
-    fn func_digit_event(&mut self, label: String) {
-        if let State::Set = self.state {
-            self.value = label.clone();
-            self.show = label.clone();
-            self.state = State::None;
-        } else if self.value == "0" {
-            self.value = label.clone();
-            self.show = label.clone();
-        } else {
-            self.value += &label;
-            self.show = trunc(self.value.as_str());
-        }
-    }
-}
-
-impl GCalculator {
     fn update(&mut self, msg: Message) -> Task<Message> {
         match msg {
             Message::Digit(num) => {
@@ -568,6 +475,97 @@ impl GCalculator {
                 _ => None
             }
         })
+    }
+
+    fn oper_event(&mut self, op: &str, label: String) -> bool {
+        match op {
+            "D" => self.history = Vec::new(),
+            "C" => {
+                self.value = String::from("0");
+                self.show = String::from("0");
+            },
+            "\u{25C4}" => {
+                if self.value.len() == 1 ||
+                    self.value == "π" || self.value == "γ" {
+                    self.value = String::from("0");
+                    self.show = String::from("0");
+                } else {
+                    self.value.pop();
+                    self.show = trunc(self.value.as_str());
+                }
+            },
+            "=" => {
+                self.state = State::Set;
+                let expr = oper_repl(self.value.as_str());
+                if self.value != "0" {
+                    let mut calc = Calculator::new();
+                    match calc.run_round(&expr, Some(6)) {
+                        Ok(valid) => {
+                            self.value = valid.clone();
+                            self.show = trunc(valid.as_str())
+                        },
+                        Err(msg) => {
+                            self.value = String::from("0");
+                            self.show = msg.to_string()
+                        }
+                    }
+                    return true;
+                }
+            },
+            "." => {
+                if let State::Set = self.state {
+                    self.value = String::from("0");
+                    self.show = String::from("0");
+                    self.state = State::None;
+                } else {
+                    self.value += &label;
+                    self.show = trunc(self.value.as_str());
+                }
+            },
+            ch @ "(" | ch @ "−" | ch @ "π" | ch @ "γ" => {
+                if let State::Set = self.state {
+                    self.state = State::None;
+                    if ch == "−" && self.value != "0" {
+                        self.value += &label;
+                        self.show = trunc(self.value.as_str());
+                    } else {
+                        self.value = label.clone();
+                        self.show = label.clone();
+                    }
+                } else if self.value == "0" {
+                    self.value = label.clone();
+                    self.show = label.clone();
+                } else {
+                    self.value += &label;
+                    self.show = trunc(self.value.as_str());
+                }
+            },
+            _ => {
+                if let State::Set = self.state {
+                    self.value += &label;
+                    self.show = trunc(self.value.as_str());
+                    self.state = State::None;
+                } else {
+                    self.value += &label;
+                    self.show = trunc(self.value.as_str());
+                }
+            }
+        }
+        false
+    }
+
+    fn func_digit_event(&mut self, label: String) {
+        if let State::Set = self.state {
+            self.value = label.clone();
+            self.show = label.clone();
+            self.state = State::None;
+        } else if self.value == "0" {
+            self.value = label.clone();
+            self.show = label.clone();
+        } else {
+            self.value += &label;
+            self.show = trunc(self.value.as_str());
+        }
     }
 }
 
