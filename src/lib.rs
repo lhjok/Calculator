@@ -129,6 +129,7 @@ static MATH: Map<&'static str, MathFn> = phf_map! {
     },
 };
 
+#[derive(Clone)]
 pub struct Calculator {
     marker: Marker,
     operator: Vec<u8>,

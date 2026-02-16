@@ -45,6 +45,7 @@ enum State {
 struct GCalculator {
     show: String,
     value: String,
+    calc: Calculator,
     history: Vec<CalcResult>,
     scroll: RelativeOffset,
     state: State,
@@ -189,6 +190,7 @@ impl Default for GCalculator {
         GCalculator {
             show: String::from("0"),
             value: String::from("0"),
+            calc: Calculator::new(),
             scroll: RelativeOffset::START,
             history: Vec::new(),
             state: State::None,
@@ -497,15 +499,15 @@ impl GCalculator {
             },
             "=" => {
                 self.state = State::Set;
-                let expr = oper_repl(self.value.as_str());
                 if self.value != "0" {
-                    let mut calc = Calculator::new();
-                    match calc.run_round(&expr, Some(6)) {
+                    let expr = oper_repl(self.value.as_str());
+                    match self.calc.run_round(&expr, Some(6)) {
                         Ok(valid) => {
                             self.value = valid.clone();
                             self.show = trunc(valid.as_str())
                         },
                         Err(msg) => {
+                            self.calc.reset();
                             self.value = String::from("0");
                             self.show = msg.to_string()
                         }
