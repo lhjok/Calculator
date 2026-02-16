@@ -385,6 +385,14 @@ impl Calculator {
         }
     }
 
+    pub fn reset(&mut self) {
+        self.numbers.clear();
+        self.state = State::Initial;
+        self.function.fill(None);
+        self.marker = Marker::Init;
+        self.operator.clear();
+    }
+
     fn result(&mut self) -> Float {
         self.state = State::Initial;
         self.function.fill(None);
