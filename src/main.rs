@@ -16,6 +16,7 @@ use iced::{
     font::{ Weight, Family }, Pixels,
     event::{ self, Event, Status },
     window::{ self, icon, icon::Icon },
+    window::settings::PlatformSpecific,
     alignment::{
         Horizontal,
         Vertical,
@@ -586,7 +587,10 @@ pub fn main() -> iced::Result {
         position: Position::Centered,
         resizable: false,
         icon: load_icon_strictly(),
-        ..window::Settings::default()
+        platform_specific: PlatformSpecific {
+            application_id: String::from("calc"),
+            ..Default::default()
+        }, ..window::Settings::default()
     }).antialiasing(true)
     .title(|_: &GCalculator| String::from("Advanced Calculator"))
     .theme(|_: &GCalculator| Theme::Dark)

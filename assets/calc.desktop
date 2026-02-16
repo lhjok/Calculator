@@ -2,8 +2,8 @@
 Name=计算器
 GenericName=计算器
 Comment[zh_CN]=计算器
-Exec=/home/lhjok/.opt/calc/calc %F
+Exec=/home/lhjok/.local/bin/calc
+Icon=/home/lhjok/.local/share/icons/calculator.png
 StartupWMClass=calc
 Terminal=false
 Type=Application
-Icon=/home/lhjok/.opt/calc/calculator.png
