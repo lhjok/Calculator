@@ -26,6 +26,6 @@
 - `acosh` , `asinh` , `atanh` , `log2` , `log10` , `sqrt` , `cbrt` , `fac` , `recip` , `erfc`
 - `erf` , `li2` , `exp` , `exp2` ,`exp10` , `eint` , `zeta` , `trunc` , `gamma` , `digamma`
 
-![image](https://github.com/lhjok/Calculator/blob/main/assets/calc.png)
+<img src="https://github.com/lhjok/Calculator/blob/main/assets/calc.png" style="zoom:1.0;"/>
 
 自创词法解析算法，一次遍历即完成计算，核心代码520行并包含错误检查机制。
