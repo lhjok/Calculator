@@ -116,34 +116,38 @@ fn handle_key(
                     Some(operator(String::from("D")))
                 } else { Some(operator(String::from("C"))) },
                 Key::Character(key) => { match key.as_str() {
-                    "(" => Some(operator(String::from("("))),
-                    ")" => Some(operator(String::from(")"))),
+                    "[" => Some(operator(String::from("("))),
+                    "]" => Some(operator(String::from(")"))),
                     "+" => Some(operator(String::from("+"))),
                     "-" => Some(operator(String::from("-"))),
                     "*" => Some(operator(String::from("×"))),
                     "/" => Some(operator(String::from("÷"))),
-                    "P" if modi.control() => Some(operator(String::from("π"))),
-                    "Y" if modi.control() => Some(operator(String::from("γ"))),
-                    "0" => if modi.control() {
+                    "p" if modi.shift() => Some(operator(String::from("π"))),
+                    "y" if modi.shift() => Some(operator(String::from("γ"))),
+                    "0" => if modi.shift() {
                         Some(operator(String::from(")")))
                     } else { Some(Message::Digit(String::from("0"))) },
                     "1" => Some(Message::Digit(String::from("1"))),
                     "2" => Some(Message::Digit(String::from("2"))),
                     "3" => Some(Message::Digit(String::from("3"))),
                     "4" => Some(Message::Digit(String::from("4"))),
-                    "5" => if modi.control() {
+                    "5" => if modi.shift() {
                         Some(operator(String::from("%")))
                     } else { Some(Message::Digit(String::from("5"))) },
-                    "6" => if modi.control() {
+                    "6" => if modi.shift() {
                         Some(operator(String::from("^")))
                     } else { Some(Message::Digit(String::from("6"))) },
                     "7" => Some(Message::Digit(String::from("7"))),
-                    "8" => Some(Message::Digit(String::from("8"))),
-                    "9" => if modi.control() {
+                    "8" => if modi.shift() {
+                        Some(operator(String::from("×")))
+                    } else { Some(Message::Digit(String::from("8"))) },
+                    "9" => if modi.shift() {
                         Some(operator(String::from("(")))
                     } else { Some(Message::Digit(String::from("9"))) },
                     "." => Some(operator(String::from("."))),
-                    "=" => Some(operator(String::from("="))),
+                    "=" => if modi.shift() {
+                        Some(operator(String::from("+")))
+                    } else { Some(operator(String::from("="))) },
                     _ => None,
                 }},
                 Key::Named(Named::Enter) =>
