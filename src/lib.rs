@@ -396,7 +396,7 @@ impl Calculator {
 
     pub fn run<S: AsRef<str>>(&mut self, expr: S) -> Result<Float, CalcError> {
         let expr = expr.as_ref();
-        let bytes = if expr.as_bytes().ends_with(&[b'=']) {
+        let bytes = if !expr.as_bytes().ends_with(&[b'=']) {
             let mut buffer = Vec::with_capacity(expr.len()+1);
             buffer.extend_from_slice(expr.as_bytes());
             buffer.push(b'='); Cow::Owned(buffer)
