@@ -505,7 +505,7 @@ impl GCalculator {
                 self.state = State::Set;
                 if self.value != "0" {
                     let expr = oper_repl(self.value.as_str());
-                    match self.calc.run_round(&expr, Some(6)) {
+                    match self.calc.run_round(expr, Some(6)) {
                         Ok(valid) => {
                             self.value = valid.clone();
                             self.show = trunc(valid.as_str())
