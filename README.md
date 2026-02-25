@@ -28,4 +28,4 @@
 
 <img src="https://github.com/lhjok/Calculator/blob/main/assets/calc.png" width="717"/>
 
-自创词法解析算法，一次遍历即完成计算，核心代码520行并包含错误检查机制。
+自创词法解析算法，一次遍历即完成计算，核心代码531行并包含错误检查机制。

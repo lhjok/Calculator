@@ -85,7 +85,7 @@ fn oper_repl(repl: &str) -> String {
             '÷' => result.push('/'),
             '×' => result.push('*'),
             'π' => result.push('P'),
-            'γ' => result.push('E'),
+            'γ' => result.push('Y'),
             _ => result.push(char),
         }
     }
@@ -144,6 +144,7 @@ fn handle_key(
                     "9" => if modi.shift() {
                         Some(operator(String::from("(")))
                     } else { Some(Message::Digit(String::from("9"))) },
+                    "e" => Some(Message::Digit(String::from("e"))),
                     "." => Some(operator(String::from("."))),
                     "=" => if modi.shift() {
                         Some(operator(String::from("+")))
