@@ -530,10 +530,10 @@ impl GCalculator {
                     self.show = trunc(self.value.as_str());
                 }
             },
-            ch @ "(" | ch @ "−" | ch @ "π" | ch @ "γ" => {
+            ch @ "(" | ch @ "−" | ch @ "π" | ch @ "γ" | ch @ "-" => {
                 if let State::Set = self.state {
                     self.state = State::None;
-                    if ch == "−" && self.value != "0" {
+                    if (ch == "−" || ch == "-") && self.value != "0" {
                         self.value += &label;
                         self.show = trunc(self.value.as_str());
                     } else {
