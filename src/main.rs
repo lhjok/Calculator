@@ -195,7 +195,7 @@ impl Default for GCalculator {
         GCalculator {
             show: String::from("0"),
             value: String::from("0"),
-            calc: Calculator::new(),
+            calc: Calculator::new(2560),
             scroll: RelativeOffset::START,
             history: Vec::new(),
             state: State::None,
