@@ -144,7 +144,9 @@ fn handle_key(
                     "9" => if modi.shift() {
                         Some(operator(String::from("(")))
                     } else { Some(Message::Digit(String::from("9"))) },
-                    "e" => Some(Message::Digit(String::from("e"))),
+                    "e" => if modi.shift() {
+                        Some(Message::Digit(String::from("E")))
+                    } else { Some(Message::Digit(String::from("e"))) },
                     "." => Some(operator(String::from("."))),
                     "=" => if modi.shift() {
                         Some(operator(String::from("+")))
