@@ -461,7 +461,7 @@ impl GCalculator {
                 ].height(45.0).spacing(3.0),
                 row![
                     operator('%', 24.0, 5.0), digit('0'), operator('.', 24.0, 0.0),
-                    operator('+', 26.0, 3.0), operator(',', 25.0, 3.0),
+                    operator('+', 26.0, 3.0), operator(',', 25.0, 0.0),
                     operator('γ', 23.0, 0.0), func_label("Fac", "fac("),
                     func_label("Abs", "abs("), func_label("Ln", "ln("),
                     func_label("Exp", "exp("), func_label("Exp2", "exp2("),
