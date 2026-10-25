@@ -425,17 +425,17 @@ impl GCalculator {
                 row![
                     func_label("Cot", "cot("), func_label("Coth", "coth("),
                     func_label("Ai", "ai("), func_label("Cbrt", "cbrt("),
-                    func_label("Li2", "li("), func_label("Erfc", "erfc("),
+                    func_label("Li2", "li2("), func_label("Erfc", "erfc("),
                     func_label("Sec", "sec("), func_label("Csc", "csc("),
                     func_label("Csch", "csch("),func_label("Eint", "eint("),
                     func_label("Trunc", "trunc("),
                 ].height(36.0).spacing(3.0),
                 row![
                     func_label("Recip", "recip("), func_label("Erf", "erf("),
-                    func_label("Acosh", "acosh("), func_label("Sgn", "sgn("),
-                    func_label("Asinh", "asinh("), func_label("Frac", "frac("),
+                    func_label("Acosh", "acosh("), func_label("Sgn", "signum("),
+                    func_label("Asinh", "asinh("), func_label("Frac", "fract("),
                     func_label("Atanh", "atanh("), func_label("Sech", "sech("),
-                    func_label("Ceil", "ceil("), func_label("Floor", "floor("),
+                    func_label("Atan2", "atan2("), func_label("Root", "root("),
                     func_label("Zeta", "zeta("),
                 ].height(36.0).spacing(3.0),
                 row![
@@ -456,15 +456,15 @@ impl GCalculator {
                     digit('1'), digit('2'), digit('3'),
                     oper_label('−', '-', 26.0, 3.0), operator('π', 24.0, 3.0),
                     oper_label('\u{039B}', '^', 21.0, 3.0), func_label("Sqrt", "sqrt("),
-                    func_label("Log2", "log("), func_label("Log10", "logx("),
-                    func_label("Asin", "asin("), func_label("Exp10", "expx("),
+                    func_label("Log2", "log2("), func_label("Log10", "log10("),
+                    func_label("Asin", "asin("), func_label("Exp10", "exp10("),
                 ].height(45.0).spacing(3.0),
                 row![
                     operator('%', 24.0, 5.0), digit('0'), operator('.', 24.0, 0.0),
                     operator('+', 26.0, 3.0), operator('γ', 23.0, 0.0),
-                    operator('=', 25.0, 3.0), func_label("Fac", "fac("),
+                    operator(',', 25.0, 3.0), func_label("Fac", "fac("),
                     func_label("Abs", "abs("), func_label("Ln", "ln("),
-                    func_label("Exp", "exp("), func_label("Exp2", "expt("),
+                    func_label("Exp", "exp("), func_label("Exp2", "exp2("),
                 ].height(45.0).spacing(3.0),
             ].padding(3.0).spacing(3.0)
         ].into()

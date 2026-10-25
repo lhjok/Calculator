@@ -11,10 +11,10 @@ textwrap = "0.16.2"
 image = "0.25.9"
 
 [dependencies.phf]
-version = "0.13.1"
+version = "0.14.0"
 features = ["macros"]
 
 [dependencies.rug]
-version = "1.28.1"
+version = "1.30.0"
 default-features = false
 features = ["std", "float"]
