@@ -471,8 +471,8 @@ impl Calculator {
         Self {
             state: State::Initial,
             context: Context::new(prec),
-            numbers: Vec::with_capacity(32),
-            operator: Vec::with_capacity(32),
+            numbers: Vec::with_capacity(96),
+            operator: Vec::with_capacity(64),
             function: vec![(None, None); 32],
             parameter: vec![None; 32],
             marker: Marker::Init,
@@ -518,7 +518,7 @@ impl Calculator {
                 b'0'..=b'9' | b'.' => {
                     if matches!(self.marker, Marker::Func) {
                         continue;
-                    } else if !matches!(self.marker, Marker::RParen | Marker::Const | Marker::Func) {
+                    } else if !matches!(self.marker, Marker::RParen | Marker::Const) {
                         self.marker = Marker::Number;
                         continue;
                     }
