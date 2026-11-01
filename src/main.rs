@@ -387,15 +387,16 @@ impl GCalculator {
 
         let oper_label = |op: char, lb: char, sz: f32, pd: f32|
             -> Element<Message> {
-            let op = String::from(op);
-            let lb = String::from(lb);
-            let oper = text(op.clone())
-                .size(sz)
-                .font(CONSOLA_BOLD)
+            let oper = text(String::from(op))
+                .size(sz).font(CONSOLA_BOLD)
                 .width(Length::Fill)
                 .height(Length::Fill)
                 .align_x(Horizontal::Center)
                 .align_y(Vertical::Center);
+            let op = if op == 'C' {
+                String::from("Clear")
+            } else { String::from(op) };
+            let lb = String::from(lb);
             let button = button(oper)
                 .width(Length::Fill)
                 .height(Length::Fill)
