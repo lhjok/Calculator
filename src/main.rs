@@ -120,7 +120,9 @@ fn handle_key(
                         '[' => Some(operator(String::from("("))),
                         ']' => Some(operator(String::from(")"))),
                         '+' => Some(operator(String::from("+"))),
-                        '-' => Some(operator(String::from("-"))),
+                        '-' => if modi.shift() {
+                            Some(Message::Func(String::from("_")))
+                        } else { Some(operator(String::from("-"))) },
                         '*' => Some(operator(String::from("×"))),
                         '/' => Some(operator(String::from("÷"))),
                         ch @ '0'..='9' | ch @ '.' => { match ch {

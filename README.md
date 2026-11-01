@@ -26,10 +26,10 @@
 - 输入表达式支持键盘绑定
 
 ### 数学函数支持列表:
-- 高级数学函数【单参数】: `ai`, `abs`, `cos`, `sin`, `tan`, `csc`, `sec`, `cot`, `coth`, `ceil`, `cosh`,
+- 高级数学函数【单参数】: `abs`, `cos`, `sin`, `tan`, `csc`, `sec`, `cot`, `coth`, `ceil`, `cosh`,
 - `tanh`, `sech`, `ln`, `csch`, `acos`, `asin`, `atan`, `acosh`, `asinh`, `atanh`, `log2`, `log10`, `sqrt`,
 - `cbrt`, `fac`, `erf`, `li2`, `exp`, `exp2`, `exp10`, `eint`, `zeta`, `trunc`, `gamma`, `floor`, `fract`,
-- `signum`, `erfc`, `digamma`, `recip`, `ln_gamma`, `j0`, `j1`, `y0`, `y1`, `square`, `sinh`
+- `signum`, `erfc`, `digamma`, `recip`, `ln_gamma`, `j0`, `j1`, `y0`, `y1`, `square`, `sinh`, `ai`
 - 高级数学函数【双参数】: `root`, `max`, `min`, `sinu`, `atan2`, `hypot`, `tanu`, `gamma_inc`,
 - `positive_diff`, `remainder`, `rooti`, `agm`, `pow`, `jn`, `yn`, `copysign`
 
