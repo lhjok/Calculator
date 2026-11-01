@@ -113,8 +113,8 @@ fn handle_key(
             Code::NumpadDecimal => Some(operator(String::from("."))),
             _ => match key {
                 Key::Named(Named::Delete) => if modi.control() {
-                    Some(operator(String::from("D")))
-                } else { Some(operator(String::from("Q"))) },
+                    Some(operator(String::from("Del")))
+                } else { Some(operator(String::from("Clear"))) },
                 Key::Character(key) => { match key.chars().next() {
                     Some(chars) => { match chars {
                         '[' => Some(operator(String::from("("))),
@@ -503,8 +503,8 @@ impl GCalculator {
 
     fn oper_event(&mut self, op: &str, label: String) -> bool {
         match op {
-            "D" => self.history = Vec::new(),
-            "Q" => {
+            "Del" => self.history = Vec::new(),
+            "Clear" => {
                 self.value = String::from("0");
                 self.show = String::from("0");
             },
@@ -546,7 +546,8 @@ impl GCalculator {
                     self.show = trunc(self.value.as_str());
                 }
             },
-            ch @ "(" | ch @ "−" | ch @ "π" | ch @ "γ" | ch @ "-" => {
+            ch @ "(" | ch @ "−" | ch @ "π" | ch @ "γ"
+            | ch @ "C" | ch @ "L" | ch @ "-" => {
                 if let State::Set = self.state {
                     self.state = State::None;
                     if (ch == "−" || ch == "-") && self.value != "0" {
