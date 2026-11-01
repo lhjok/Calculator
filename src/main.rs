@@ -115,46 +115,60 @@ fn handle_key(
                 Key::Named(Named::Delete) => if modi.control() {
                     Some(operator(String::from("D")))
                 } else { Some(operator(String::from("C"))) },
-                Key::Character(key) => { match key.as_str() {
-                    "[" => Some(operator(String::from("("))),
-                    "]" => Some(operator(String::from(")"))),
-                    "+" => Some(operator(String::from("+"))),
-                    "-" => Some(operator(String::from("-"))),
-                    "*" => Some(operator(String::from("×"))),
-                    "/" => Some(operator(String::from("÷"))),
-                    "p" if modi.shift() => Some(operator(String::from("π"))),
-                    "y" if modi.shift() => Some(operator(String::from("γ"))),
-                    "0" => if modi.shift() {
-                        Some(operator(String::from(")")))
-                    } else { Some(Message::Digit(String::from("0"))) },
-                    "1" => Some(Message::Digit(String::from("1"))),
-                    "2" => Some(Message::Digit(String::from("2"))),
-                    "3" => Some(Message::Digit(String::from("3"))),
-                    "4" => Some(Message::Digit(String::from("4"))),
-                    "5" => if modi.shift() {
-                        Some(operator(String::from("%")))
-                    } else { Some(Message::Digit(String::from("5"))) },
-                    "6" => if modi.shift() {
-                        Some(operator(String::from("^")))
-                    } else { Some(Message::Digit(String::from("6"))) },
-                    "7" => Some(Message::Digit(String::from("7"))),
-                    "8" => if modi.shift() {
-                        Some(operator(String::from("×")))
-                    } else { Some(Message::Digit(String::from("8"))) },
-                    "9" => if modi.shift() {
-                        Some(operator(String::from("(")))
-                    } else { Some(Message::Digit(String::from("9"))) },
-                    "e" => if modi.shift() {
-                        Some(Message::Digit(String::from("E")))
-                    } else { Some(Message::Digit(String::from("e"))) },
-                    "." => Some(operator(String::from("."))),
-                    "=" => if modi.shift() {
-                        Some(operator(String::from("+")))
-                    } else { Some(operator(String::from("="))) },
-                    _ => None,
+                Key::Character(key) => { match key.chars().next() {
+                    Some(chars) => { match chars {
+                        '[' => Some(operator(String::from("("))),
+                        ']' => Some(operator(String::from(")"))),
+                        '+' => Some(operator(String::from("+"))),
+                        '-' => Some(operator(String::from("-"))),
+                        '*' => Some(operator(String::from("×"))),
+                        '/' => Some(operator(String::from("÷"))),
+                        ch @ '0'..='9' | ch @ '.' => { match ch {
+                            '5' => if modi.shift() {
+                                Some(operator(String::from("%")))
+                            } else { Some(Message::Digit(String::from("5"))) },
+                            '6' => if modi.shift() {
+                                Some(operator(String::from("^")))
+                            } else { Some(Message::Digit(String::from("6"))) },
+                            '8' => if modi.shift() {
+                                Some(operator(String::from("×")))
+                            } else { Some(Message::Digit(String::from("8"))) },
+                            '9' => if modi.shift() {
+                                Some(operator(String::from("(")))
+                            } else { Some(Message::Digit(String::from("9"))) },
+                            '0' => if modi.shift() {
+                                Some(operator(String::from(")")))
+                            } else { Some(Message::Digit(String::from("0"))) },
+                            '.' => Some(operator(String::from("."))),
+                            _ => Some(Message::Digit(ch.to_string())),
+                        }},
+                        ch @ 'a'..='z' => { match ch {
+                            'e' => if modi.shift() {
+                                Some(Message::Digit(String::from("E")))
+                            } else { Some(Message::Digit(String::from("e"))) },
+                            'p' => if modi.shift() {
+                                Some(operator(String::from("π")))
+                            } else { Some(Message::Func(String::from("p"))) },
+                            'y' => if modi.shift() {
+                                Some(operator(String::from("γ")))
+                            } else { Some(Message::Func(String::from("y"))) },
+                            'c' => if modi.shift() {
+                                Some(operator(String::from("C")))
+                            } else { Some(Message::Func(String::from("c"))) },
+                            'l' => if modi.shift() {
+                                Some(operator(String::from("L")))
+                            } else { Some(Message::Func(String::from("l"))) },
+                            _ => Some(Message::Func(ch.to_string())),
+                        }},
+                        ',' => Some(Message::Func(String::from(","))),
+                        '=' => if modi.shift() {
+                            Some(operator(String::from("+")))
+                        } else { Some(operator(String::from("="))) },
+                        _ => None,
+                    }},
+                    None => None,
                 }},
-                Key::Named(Named::Enter) =>
-                    Some(operator(String::from("="))),
+                Key::Named(Named::Enter) => Some(operator(String::from("="))),
                 Key::Named(Named::Backspace) =>
                     Some(operator(String::from("\u{25C4}"))),
                 _ => None,
@@ -461,8 +475,8 @@ impl GCalculator {
                 ].height(45.0).spacing(3.0),
                 row![
                     operator('%', 24.0, 5.0), digit('0'), operator('.', 24.0, 0.0),
-                    operator('+', 26.0, 3.0), operator(',', 25.0, 0.0),
-                    operator('γ', 23.0, 0.0), func_label("Fac", "fac("),
+                    operator('+', 26.0, 3.0), operator('γ', 23.0, 0.0),
+                    operator('=', 25.0, 3.0), func_label("Fac", "fac("),
                     func_label("Abs", "abs("), func_label("Ln", "ln("),
                     func_label("Exp", "exp("), func_label("Exp2", "exp2("),
                 ].height(45.0).spacing(3.0),
