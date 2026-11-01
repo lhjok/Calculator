@@ -114,7 +114,7 @@ fn handle_key(
             _ => match key {
                 Key::Named(Named::Delete) => if modi.control() {
                     Some(operator(String::from("D")))
-                } else { Some(operator(String::from("C"))) },
+                } else { Some(operator(String::from("Q"))) },
                 Key::Character(key) => { match key.chars().next() {
                     Some(chars) => { match chars {
                         '[' => Some(operator(String::from("("))),
@@ -504,7 +504,7 @@ impl GCalculator {
     fn oper_event(&mut self, op: &str, label: String) -> bool {
         match op {
             "D" => self.history = Vec::new(),
-            "C" => {
+            "Q" => {
                 self.value = String::from("0");
                 self.show = String::from("0");
             },
