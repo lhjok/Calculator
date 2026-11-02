@@ -113,8 +113,8 @@ fn handle_key(
             Code::NumpadDecimal => Some(operator(String::from("."))),
             _ => match key {
                 Key::Named(Named::Delete) => if modi.control() {
-                    Some(operator(String::from("Del")))
-                } else { Some(operator(String::from("Clear"))) },
+                    Some(operator(String::from("D")))
+                } else { Some(operator(String::from("C"))) },
                 Key::Character(key) => { match key.chars().next() {
                     Some(chars) => { match chars {
                         '[' => Some(operator(String::from("("))),
@@ -154,9 +154,9 @@ fn handle_key(
                             'y' => if modi.shift() {
                                 Some(operator(String::from("γ")))
                             } else { Some(Message::Func(String::from("y"))) },
-                            'c' => if modi.shift() {
-                                Some(operator(String::from("C")))
-                            } else { Some(Message::Func(String::from("c"))) },
+                            'g' => if modi.shift() {
+                                Some(operator(String::from("G")))
+                            } else { Some(Message::Func(String::from("g"))) },
                             'l' => if modi.shift() {
                                 Some(operator(String::from("L")))
                             } else { Some(Message::Func(String::from("l"))) },
@@ -389,16 +389,14 @@ impl GCalculator {
 
         let oper_label = |op: char, lb: char, sz: f32, pd: f32|
             -> Element<Message> {
-            let oper = text(String::from(op))
+            let op = String::from(op);
+            let lb = String::from(lb);
+            let oper = text(op.clone())
                 .size(sz).font(CONSOLA_BOLD)
                 .width(Length::Fill)
                 .height(Length::Fill)
                 .align_x(Horizontal::Center)
                 .align_y(Vertical::Center);
-            let op = if op == 'C' {
-                String::from("Clear")
-            } else { String::from(op) };
-            let lb = String::from(lb);
             let button = button(oper)
                 .width(Length::Fill)
                 .height(Length::Fill)
@@ -506,8 +504,8 @@ impl GCalculator {
 
     fn oper_event(&mut self, op: &str, label: String) -> bool {
         match op {
-            "Del" => self.history = Vec::new(),
-            "Clear" => {
+            "D" => self.history = Vec::new(),
+            "C" => {
                 self.value = String::from("0");
                 self.show = String::from("0");
             },
@@ -550,7 +548,7 @@ impl GCalculator {
                 }
             },
             ch @ "(" | ch @ "−" | ch @ "π" | ch @ "γ"
-            | ch @ "C" | ch @ "L" | ch @ "-" => {
+            | ch @ "G" | ch @ "L" | ch @ "-" => {
                 if let State::Set = self.state {
                     self.state = State::None;
                     if (ch == "−" || ch == "-") && self.value != "0" {

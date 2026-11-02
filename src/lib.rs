@@ -638,12 +638,12 @@ impl Calculator {
                 b'=' | b'\n' | b'\r' => {
                     return self.finish(&bytes, locat, index);
                 },
-                ch @ b'P' | ch @ b'Y' | ch @ b'C' | ch @ b'L' => {
+                ch @ b'P' | ch @ b'Y' | ch @ b'G' | ch @ b'L' => {
                     if matches!(self.state, State::Operator | State::Initial) {
                         let constant = match ch {
                             b'P' => &Constant::Pi,
                             b'Y' => &Constant::Euler,
-                            b'C' => &Constant::Catalan,
+                            b'G' => &Constant::Catalan,
                             b'L' => &Constant::Log2,
                             _ => return Err(CalcError::UnknownError)
                         };
