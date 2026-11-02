@@ -1,6 +1,6 @@
-# 高性能高级数学表达式计算器
+# 全功能高级数学表达式计算器
 
-### 使用Rust+Rug+Iced编写，支持任意精度超大数运算。
+### 使用Rust+Rug+Iced编写，支持任意精度的超大数运算。
 
 ### 计算器使用简介:
 
@@ -25,9 +25,9 @@
 - 三角函数`Default: Radian`= 弧度`Radian`转角度`Degree`例:`cos(6xπ÷180)`
 - 函数`sqrt(2)`= 平方根函数(开根号)
 - 函数`fac(9)`= 阶乘函数
-- 输入表达式支持键盘绑定
+- 表达式支持键盘绑定输入
 
-### 数学函数支持列表:
+### 高级数学函数支持列表:
 - 高级数学函数【单参数】: `abs`, `cos`, `sin`, `tan`, `csc`, `sec`, `cot`, `coth`, `ceil`, `cosh`,
 - `tanh`, `sech`, `ln`, `csch`, `acos`, `asin`, `atan`, `acosh`, `asinh`, `atanh`, `log2`, `log10`, `sqrt`,
 - `cbrt`, `fac`, `erf`, `li2`, `exp`, `exp2`, `exp10`, `eint`, `zeta`, `trunc`, `gamma`, `floor`, `fract`,
@@ -37,4 +37,4 @@
 
 <img src="https://github.com/lhjok/Calculator/blob/main/assets/calc.png" width="717"/>
 
-自创词法解析算法，一次遍历即完成计算，核心代码652行并包含错误检查机制。
+自创非递归解析算法，字节扫描配合状态机一次遍历即可完成计算，核心代码(652)行并包含错误检查机制。
