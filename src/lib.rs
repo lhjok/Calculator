@@ -231,20 +231,32 @@ fn extract(expr: &[u8], c: &Context, n: usize, i: usize) -> Result<Float, CalcEr
     }
 }
 
+/// Extension trait for `u8` to handle operator logic.
 trait ByteExt {
+    /// Returns the precedence of the operator. Higher values mean higher priority.
     fn priority(&self) -> Result<u8, CalcError>;
+    /// Performs the mathematical operation using the top two numbers from the calculator stack.
     fn computing(&self, n: &mut Calculator) -> Result<Float, CalcError>;
 }
 
+/// Extension trait for `rug::Float` to provide formatting and accuracy checks.
 trait FloatExt {
+    /// Floating-point modulo operation.
     fn fmod(&self, n: &Float, prec: u32) -> Float;
+    /// Validates if the result is a finite number and within the allowed magnitude.
     fn accuracy(self, n: &Float) -> Result<Float, CalcError>;
+    /// Converts the arbitrary-precision float to a rounded string representation.
+    /// Supports custom precision up to 10000 decimal places.
     fn to_round(&self, digits: Option<usize>) -> Result<String, CalcError>;
 }
 
+/// Extension trait for `String` to facilitate raw data parsing and formatting.
 trait StringExt {
+    /// Parses a raw Rug Float string into its components (sign, digits, exponent).
     fn parse_rug_raw(&self) -> (bool, Vec<u8>, i32);
+    /// Formats a float string into a fixed-point representation without trailing zeros.
     fn to_fixed_clean(&self) -> Result<String, CalcError>;
+    /// Rounds the floating-point string to a specific number of decimal places.
     fn to_fixed_round(&self, prec: i32) -> Result<String, CalcError>;
 }
 
@@ -293,8 +305,8 @@ impl FloatExt for Float {
 
     fn to_round(&self, digits: Option<usize>) -> Result<String, CalcError> {
         if let Some(precision) = digits {
-            if precision < 1 || precision > 700 {
-                let err = String::from("Set Precision Greater Than Equal 1");
+            if precision < 1 || precision > 10000 {
+                let err = String::from("Set Precision: ≥ 1 or < 10000");
                 return Err(CalcError::Custom(err));
             }
         }
@@ -331,10 +343,17 @@ impl StringExt for String {
 
     fn to_fixed_clean(&self) -> Result<String, CalcError> {
         let (negative, digits, exp) = self.parse_rug_raw();
+        if exp.abs() > 10000 {
+            return Err(CalcError::BeyondAccuracy);
+        }
         let mut cursor = 0;
         let digits_len = digits.len();
         let exp_abs = (exp.unsigned_abs()+2) as usize;
-        let mut buf = vec![b'0'; digits_len+exp_abs];
+        let capacity = digits_len+exp_abs;
+        if capacity > 65536 {
+            return Err(CalcError::BeyondAccuracy);
+        }
+        let mut buf = vec![b'0'; capacity];
         if negative {
             buf[cursor] = b'-';
             cursor += 1;
@@ -393,6 +412,9 @@ impl StringExt for String {
 
     fn to_fixed_round(&self, prec: i32) -> Result<String, CalcError> {
         let (negative, digits, exp) = self.parse_rug_raw();
+        if exp.abs() > 10000 {
+            return Err(CalcError::BeyondAccuracy);
+        }
         let round_idx = (exp+prec) as usize;
         let mut carry = false;
         if round_idx < digits.len() && digits[round_idx] >= b'5' {
@@ -401,6 +423,9 @@ impl StringExt for String {
         let max_bound = (exp+prec)-1;
         let min_bound = std::cmp::min(0, exp-1);
         let capacity = ((max_bound-min_bound).max(0) as usize)+9;
+        if capacity > 65536 {
+            return Err(CalcError::BeyondAccuracy);
+        }
         let mut buf = vec![b'0'; capacity];
         let mut cursor = capacity-1;
         for index in (min_bound..=max_bound).rev() {
@@ -473,6 +498,7 @@ impl CalcError {
 }
 
 impl Calculator {
+    /// Initializes a new Calculator instance with pre-allocated capacities.
     pub fn new(prec: u32) -> Self {
         let prec = max(64, prec);
         Self {
@@ -488,18 +514,23 @@ impl Calculator {
         }
     }
 
+    /// Sets whether to filter or skip whitespace and control characters during parsing.
+    /// By default, whitespace is not filtered.
     pub fn set_filter(&mut self, filter: bool) -> &mut Self {
         self.filter = filter; self
     }
 
+    /// Pre-allocates capacity for the numbers stack to avoid frequent reallocations.
     pub fn set_numbers_size(&mut self, size: usize) -> &mut Self {
         self.numbers = Vec::with_capacity(size); self
     }
 
+    /// Pre-allocates capacity for the operator stack to avoid frequent reallocations.
     pub fn set_operator_size(&mut self, size: usize) -> &mut Self {
         self.operator = Vec::with_capacity(size); self
     }
 
+    /// Resizes and initializes the function and parameter storage vectors to the specified size.
     pub fn set_function_size(&mut self, size: usize) -> &mut Self {
         self.function = vec![(None, None); size];
         self.parameter = vec![None; size]; self
