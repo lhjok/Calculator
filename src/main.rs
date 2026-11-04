@@ -529,7 +529,6 @@ impl GCalculator {
                             self.show = trunc(valid.as_str())
                         },
                         Err(msg) => {
-                            self.calc.reset();
                             self.value = String::from("0");
                             self.show = msg.to_string()
                         }

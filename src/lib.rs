@@ -132,6 +132,11 @@ static MATH1: Map<&'static [u8], MathFn1> = phf_map! {
     b"fac" => |v, c| {
         let to_u32 = v.to_u32_saturating()
             .ok_or(CalcError::UnknownError)?;
+        let max_allowed = std::cmp::min(
+            5000, 100+((c.prec/64)*100));
+        if to_u32 > max_allowed {
+            return Err(CalcError::ParameterError);
+        }
         let fac = Float::factorial(to_u32);
         Float::with_val(c.prec, fac).accuracy(&c.max)
     },
@@ -208,6 +213,7 @@ pub struct Calculator {
     parameter: Vec<Option<usize>>,
     numbers: Vec<Float>,
     bracket: usize,
+    filter: bool,
     state: State,
 }
 
@@ -392,10 +398,11 @@ impl StringExt for String {
         if round_idx < digits.len() && digits[round_idx] >= b'5' {
             carry = true;
         }
-        let mut buf = [b'0'; 4096];
-        let mut cursor = 4095;
         let max_bound = (exp+prec)-1;
         let min_bound = std::cmp::min(0, exp-1);
+        let capacity = ((max_bound-min_bound).max(0) as usize)+9;
+        let mut buf = vec![b'0'; capacity];
+        let mut cursor = capacity-1;
         for index in (min_bound..=max_bound).rev() {
             if index == exp-1 && prec > 0 {
                 buf[cursor] = b'.';
@@ -424,7 +431,7 @@ impl StringExt for String {
             buf[cursor] = b'-';
             cursor -= 1;
         }
-        let final_buf = &buf[cursor+1..4096];
+        let final_buf = &buf[cursor+1..capacity];
         let mut final_len = final_buf.len();
         for index in final_buf.iter().rev() {
             match index {
@@ -476,11 +483,29 @@ impl Calculator {
             function: vec![(None, None); 32],
             parameter: vec![None; 32],
             marker: Marker::Init,
+            filter: false,
             bracket: 0,
         }
     }
 
-    pub fn reset(&mut self) {
+    pub fn set_filter(&mut self, filter: bool) -> &mut Self {
+        self.filter = filter; self
+    }
+
+    pub fn set_numbers_size(&mut self, size: usize) -> &mut Self {
+        self.numbers = Vec::with_capacity(size); self
+    }
+
+    pub fn set_operator_size(&mut self, size: usize) -> &mut Self {
+        self.operator = Vec::with_capacity(size); self
+    }
+
+    pub fn set_function_size(&mut self, size: usize) -> &mut Self {
+        self.function = vec![(None, None); size];
+        self.parameter = vec![None; size]; self
+    }
+
+    fn reset(&mut self) {
         self.numbers.clear();
         self.state = State::Initial;
         self.function.fill((None, None));
@@ -488,6 +513,14 @@ impl Calculator {
         self.parameter.fill(None);
         self.operator.clear();
         self.bracket = 0;
+    }
+
+    fn is_resize(&mut self, target_idx: usize) {
+        if target_idx >= self.function.len() {
+            let len = self.function.len();
+            self.function.resize(target_idx+(len/2), (None, None));
+            self.parameter.resize(target_idx+(len/2), None);
+        }
     }
 
     fn finish(&mut self, expr: &[u8], locat: usize, end_idx: usize) -> Result<Float, CalcError> {
@@ -509,9 +542,7 @@ impl Calculator {
         self.reset(); Ok(result)
     }
 
-    pub fn run<S: AsRef<[u8]>>(&mut self, expr: S) -> Result<Float, CalcError> {
-        let bytes: Vec<u8> = expr.as_ref().iter()
-            .copied().filter(|&b| b != b' ').collect();
+    fn parse(&mut self, bytes: &[u8]) -> Result<Float, CalcError> {
         let mut locat: usize = 0;
         for (index, &valid) in bytes.iter().enumerate() {
             match valid {
@@ -547,7 +578,7 @@ impl Calculator {
                         return Err(CalcError::ExpressionError);
                     }
                     if matches!(self.state, State::Operator | State::Initial) {
-                        self.numbers.push(extract(&bytes, &self.context, locat, index)?);
+                        self.numbers.push(extract(bytes, &self.context, locat, index)?);
                         self.state = State::Operand;
                     }
                     while self.operator.len() != 0 && self.operator.last() != Some(&b'(') {
@@ -569,12 +600,15 @@ impl Calculator {
                 ch @ b'(' => {
                     if matches!(self.marker, Marker::Func) {
                         let name = &bytes[locat..index];
+                        let target_idx = self.bracket + 1;
                         if let Some(&func_ptr) = MATH1.get(name) {
-                            self.function[self.bracket+1] = (Some(func_ptr), None);
-                            self.parameter[self.bracket+1] = Some(1);
+                            self.is_resize(target_idx);
+                            self.function[target_idx] = (Some(func_ptr), None);
+                            self.parameter[target_idx] = Some(1);
                         } else if let Some(&func_ptr) = MATH2.get(name) {
-                            self.function[self.bracket+1] = (None, Some(func_ptr));
-                            self.parameter[self.bracket+1] = Some(1);
+                            self.is_resize(target_idx);
+                            self.function[target_idx] = (None, Some(func_ptr));
+                            self.parameter[target_idx] = Some(1);
                         } else {
                             return Err(CalcError::FunctionUndefined);
                         }
@@ -593,7 +627,7 @@ impl Calculator {
                 ch @ b')' | ch @ b',' => {
                     if matches!(self.state, State::Operator | State::Initial) {
                         if matches!(self.marker, Marker::Number) {
-                            self.numbers.push(extract(&bytes, &self.context, locat, index)?);
+                            self.numbers.push(extract(bytes, &self.context, locat, index)?);
                             self.state = State::Operand;
                         }
                     }
@@ -635,9 +669,7 @@ impl Calculator {
                     }
                     return Err(CalcError::ExpressionError);
                 },
-                b'=' | b'\n' | b'\r' => {
-                    return self.finish(&bytes, locat, index);
-                },
+                b'=' => return self.finish(bytes, locat, index),
                 ch @ b'P' | ch @ b'Y' | ch @ b'G' | ch @ b'L' => {
                     if matches!(self.state, State::Operator | State::Initial) {
                         let constant = match ch {
@@ -665,7 +697,18 @@ impl Calculator {
                 _ => return Err(CalcError::OperatorUndefined),
             }
         }
-        self.finish(&bytes, locat, bytes.len())
+        self.finish(bytes, locat, bytes.len())
+    }
+
+    pub fn run<S: AsRef<[u8]>>(&mut self, expr: S) -> Result<Float, CalcError> {
+        let vec_expr: Vec<u8>;
+        let new_expr = if self.filter {
+            vec_expr = expr.as_ref().iter()
+                .copied().filter(|&b| !b.is_ascii_whitespace()).collect();
+            vec_expr.as_ref() } else { expr.as_ref() };
+        self.parse(new_expr).map_err(|error| {
+            self.reset(); error
+        })
     }
 
     pub fn run_round<S: AsRef<[u8]>>(
