@@ -394,8 +394,8 @@ impl StringExt for String {
         let mut final_len = cursor;
         if let Some(dot) = dot_pos {
             let dec_len = cursor-dot;
-            final_len = if dec_len < 700
-            { dec_len } else { 700 };
+            final_len = if dec_len < 10000
+            { dec_len } else { 10000 };
             while final_len > 0 {
                 match buf[final_len-1] {
                     b'0' => final_len -= 1,
