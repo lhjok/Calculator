@@ -37,4 +37,4 @@
 
 <img src="https://github.com/lhjok/Calculator/blob/main/assets/calc.png" width="717"/>
 
-自创非递归解析算法，字节扫描配合状态机一次遍历即可完成计算，核心代码(652)行并包含错误检查机制。
+自创非递归解析算法，字节扫描配合状态机一次遍历即可完成计算，核心代码(689)行并包含错误检查机制。
