@@ -1,6 +1,11 @@
 use rug::Float;
 use rug::ops::Pow;
 use std::cmp::max;
+use std::error::Error;
+use std::fmt::{
+    Display, Formatter,
+    Result as FmtResult,
+};
 use rug::float::Constant;
 use phf::phf_map;
 use phf::Map;
@@ -51,6 +56,28 @@ pub enum CalcError {
     InvalidNumber,
 }
 
+impl Display for CalcError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        match self {
+            CalcError::UnknownOperator => write!(f, "Unknown Operator"),
+            CalcError::Custom(error) => write!(f, "{}", error),
+            CalcError::DivideByZero => write!(f, "Divide By Zero"),
+            CalcError::BeyondAccuracy => write!(f, "Beyond Accuracy"),
+            CalcError::UnknownError => write!(f, "Unknown Error"),
+            CalcError::ParameterError => write!(f, "Parameter Error"),
+            CalcError::ExpressionError => write!(f, "Expression Error"),
+            CalcError::FunctionUndefined => write!(f, "Function Undefined"),
+            CalcError::OperatorUndefined => write!(f, "Operator Undefined"),
+            CalcError::EmptyExpression => write!(f, "Empty Expression"),
+            CalcError::InvalidNumber => write!(f, "Invalid Number"),
+        }
+    }
+}
+
+// Standard Error trait implementation for CalcError.
+impl Error for CalcError {}
+
+/// Type alias for a single-argument mathematical function.
 type MathFn1 = fn(Float, &Context) -> Result<Float, CalcError>;
 static MATH1: Map<&'static [u8], MathFn1> = phf_map! {
     b"ai" => |v, c| v.ai().accuracy(&c.max),
@@ -153,6 +180,7 @@ static MATH1: Map<&'static [u8], MathFn1> = phf_map! {
     },
 };
 
+/// Type alias for a two-argument mathematical function.
 type MathFn2 = fn(Float, &Float, &Context) -> Result<Float, CalcError>;
 static MATH2: Map<&'static [u8], MathFn2> = phf_map! {
     b"max" => |v1, v2, c| v1.max(v2).accuracy(&c.max),
@@ -361,7 +389,7 @@ impl StringExt for String {
         let mut cursor = 0;
         let digits_len = digits.len();
         let exp_abs = (exp.unsigned_abs()+2) as usize;
-        let capacity = digits_len+exp_abs;
+        let capacity = digits_len + exp_abs;
         if capacity > 65536 {
             return Err(CalcError::BeyondAccuracy);
         }
@@ -488,24 +516,6 @@ impl Context {
     fn new(prec: u32) -> Self {
         let max = max_value(prec);
         Self { prec, max }
-    }
-}
-
-impl CalcError {
-    pub fn to_string(&self) -> String {
-        match self {
-            CalcError::UnknownOperator => String::from("Unknown Operator"),
-            CalcError::Custom(error) => String::from(error),
-            CalcError::DivideByZero => String::from("Divide By Zero"),
-            CalcError::BeyondAccuracy => String::from("Beyond Accuracy"),
-            CalcError::UnknownError => String::from("Unknown Error"),
-            CalcError::ParameterError => String::from("Parameter Error"),
-            CalcError::ExpressionError => String::from("Expression Error"),
-            CalcError::FunctionUndefined => String::from("Function Undefined"),
-            CalcError::OperatorUndefined => String::from("Operator Undefined"),
-            CalcError::EmptyExpression => String::from("Empty Expression"),
-            CalcError::InvalidNumber => String::from("Invalid Number"),
-        }
     }
 }
 
@@ -644,8 +654,12 @@ impl Calculator {
                         self.state = State::Operand;
                     }
                     while self.operator.len() != 0 && self.operator.last() != Some(&b'(') {
+                        let curr_operator = ch.priority()?;
                         let operator = self.operator.last().ok_or(CalcError::UnknownError)?;
-                        if operator.priority()? >= ch.priority()? {
+                        let prev_operator = operator.priority()?;
+                        let new_operator = if prev_operator == 3 && curr_operator == 3 {
+                            curr_operator + 1 } else { curr_operator };
+                        if prev_operator >= new_operator {
                             let value = self.operator.pop()
                                 .ok_or(CalcError::UnknownError)?.computing(self)?;
                             self.numbers.push(value);
