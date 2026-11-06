@@ -77,7 +77,7 @@ impl Display for CalcError {
 // Standard Error trait implementation for CalcError.
 impl Error for CalcError {}
 
-/// Type alias for a single-argument mathematical function.
+/// Type alias for a single-parameter mathematical function.
 type MathFn1 = fn(Float, &Context) -> Result<Float, CalcError>;
 static MATH1: Map<&'static [u8], MathFn1> = phf_map! {
     b"ai" => |v, c| v.ai().accuracy(&c.max),
@@ -180,7 +180,7 @@ static MATH1: Map<&'static [u8], MathFn1> = phf_map! {
     },
 };
 
-/// Type alias for a two-argument mathematical function.
+/// Type alias for a two-parameter mathematical function.
 type MathFn2 = fn(Float, &Float, &Context) -> Result<Float, CalcError>;
 static MATH2: Map<&'static [u8], MathFn2> = phf_map! {
     b"max" => |v1, v2, c| v1.max(v2).accuracy(&c.max),
