@@ -255,6 +255,7 @@ pub struct Calculator {
     context: Context,
     operator: Vec<u8>,
     negative: Vec<bool>,
+    powindex: Vec<NegPow>,
     function: Vec<(Option<MathFn1>, Option<MathFn2>)>,
     parameter: Vec<Option<usize>>,
     numbers: Vec<Float>,
@@ -544,6 +545,7 @@ impl Calculator {
             context: Context::new(prec),
             numbers: Vec::with_capacity(96),
             operator: Vec::with_capacity(64),
+            powindex: vec![NegPow::Init; 64],
             function: vec![(None, None); 32],
             parameter: vec![None; 32],
             negative: vec![false; 48],
@@ -566,7 +568,8 @@ impl Calculator {
 
     /// Pre-allocates capacity for the operator stack to avoid frequent reallocations.
     pub fn set_operator_size(&mut self, size: usize) -> &mut Self {
-        self.operator = Vec::with_capacity(size); self
+        self.operator = Vec::with_capacity(size);
+        self.powindex = vec![NegPow::Init; size]; self
     }
 
     /// Pre-allocates capacity for the negative stack to avoid frequent reallocations.
@@ -584,6 +587,7 @@ impl Calculator {
         self.numbers.clear();
         self.state = State::Initial;
         self.function.fill((None, None));
+        self.powindex.fill(NegPow::Init);
         self.negpower = NegPow::Init;
         self.marker = Marker::Init;
         self.parameter.fill(None);
@@ -596,6 +600,13 @@ impl Calculator {
         if target_idx >= self.negative.len() {
             let len = self.negative.len();
             self.negative.resize(target_idx+(len/2), false);
+        }
+    }
+
+    fn is_resize_pow(&mut self, target_idx: usize) {
+        if target_idx >= self.powindex.len() {
+            let len = self.powindex.len();
+            self.powindex.resize(target_idx+(len/2), NegPow::Init);
         }
     }
 
@@ -619,8 +630,9 @@ impl Calculator {
         }
         while let Some(op) = self.operator.pop() {
             let mut value = op.computing(self)?;
-            if self.operator.last() != Some(&b'^') {
-                if op == b'^' && matches!(self.negpower, NegPow::Read) {
+            if let Some(negpow) = self.powindex.get(self.operator.len()) {
+                if op == b'^' && matches!(negpow, NegPow::Read) {
+                    self.powindex[self.operator.len()] = NegPow::Init;
                     self.negpower = NegPow::Init;
                     value = 0.0 - value;
                 }
@@ -674,6 +686,8 @@ impl Calculator {
                     }
                     if matches!(self.state, State::Operator | State::Initial) {
                         if ch == b'^' && matches!(self.negpower, NegPow::Record) {
+                            self.is_resize_pow(self.operator.len());
+                            self.powindex[self.operator.len()] = NegPow::Read;
                             self.negpower = NegPow::Read; locat += 1;
                         } else if !matches!(self.negpower, NegPow::Read) {
                             self.negpower = NegPow::Init;
@@ -690,8 +704,9 @@ impl Calculator {
                         if prev_operator >= new_operator {
                             if let Some(op) = self.operator.pop() {
                                 let mut value = op.computing(self)?;
-                                if self.operator.last() != Some(&b'^') {
-                                    if op == b'^' && matches!(self.negpower, NegPow::Read) {
+                                if let Some(negpow) = self.powindex.get(self.operator.len()) {
+                                    if op == b'^' && matches!(negpow, NegPow::Read) {
+                                        self.powindex[self.operator.len()] = NegPow::Init;
                                         self.negpower = NegPow::Init;
                                         value = 0.0 - value;
                                     }
@@ -755,8 +770,9 @@ impl Calculator {
                             while self.operator.last() != Some(&b'(') {
                                 if let Some(op) = self.operator.pop() {
                                     let mut value = op.computing(self)?;
-                                    if self.operator.last() != Some(&b'^') {
-                                        if op == b'^' && matches!(self.negpower, NegPow::Read) {
+                                    if let Some(negpow) = self.powindex.get(self.operator.len()) {
+                                        if op == b'^' && matches!(negpow, NegPow::Read) {
+                                            self.powindex[self.operator.len()] = NegPow::Init;
                                             self.negpower = NegPow::Init;
                                             value = 0.0 - value;
                                         }
