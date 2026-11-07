@@ -80,166 +80,165 @@ impl Error for CalcError {}
 /// Type alias for a single-parameter mathematical function.
 type MathFn1 = fn(Float, &Context) -> Result<Float, CalcError>;
 static MATH1: Map<&'static [u8], MathFn1> = phf_map! {
-    b"ai" => |v, c| v.ai().accuracy(&c.max),
-    b"li2" => |v, c| v.li2().accuracy(&c.max),
-    b"erf" => |v, c| v.erf().accuracy(&c.max),
-    b"erfc" => |v, c| v.erfc().accuracy(&c.max),
-    b"abs" => |v, c| v.abs().accuracy(&c.max),
+    b"ai" => |v, c| v.ai().accuracy(c.max.as_ref()),
+    b"li2" => |v, c| v.li2().accuracy(c.max.as_ref()),
+    b"erf" => |v, c| v.erf().accuracy(c.max.as_ref()),
+    b"erfc" => |v, c| v.erfc().accuracy(c.max.as_ref()),
+    b"abs" => |v, c| v.abs().accuracy(c.max.as_ref()),
     b"ln" => |v, c| if v <= 0.0 {
         Err(CalcError::ParameterError)
-    } else { v.ln().accuracy(&c.max) },
-    b"exp" => |v, c| v.exp().accuracy(&c.max),
-    b"exp2" => |v, c| v.exp2().accuracy(&c.max),
-    b"exp10" => |v, c| v.exp10().accuracy(&c.max),
-    b"trunc" => |v, c| v.trunc().accuracy(&c.max),
+    } else { v.ln().accuracy(c.max.as_ref()) },
+    b"exp" => |v, c| v.exp().accuracy(c.max.as_ref()),
+    b"exp2" => |v, c| v.exp2().accuracy(c.max.as_ref()),
+    b"exp10" => |v, c| v.exp10().accuracy(c.max.as_ref()),
+    b"trunc" => |v, c| v.trunc().accuracy(c.max.as_ref()),
     b"zeta" => |v, c| if v == 1.0 {
         Err(CalcError::ParameterError)
-    } else { v.zeta().accuracy(&c.max) },
+    } else { v.zeta().accuracy(c.max.as_ref()) },
     b"gamma" => |v, c| if v <= 0.0 && v.clone().fract() == 0.0 {
         Err(CalcError::ParameterError)
-    } else { v.gamma().accuracy(&c.max) },
+    } else { v.gamma().accuracy(c.max.as_ref()) },
     b"digamma" => |v, c| if v <= 0.0 && v.clone().fract() == 0.0 {
         Err(CalcError::ParameterError)
-    } else { v.digamma().accuracy(&c.max) },
+    } else { v.digamma().accuracy(c.max.as_ref()) },
     b"eint" => |v, c| if v == 0.0 {
         Err(CalcError::ParameterError)
-    } else { v.eint().accuracy(&c.max) },
+    } else { v.eint().accuracy(c.max.as_ref()) },
     b"log2" => |v, c| if v <= 0.0 {
         Err(CalcError::ParameterError)
-    } else { v.log2().accuracy(&c.max) },
+    } else { v.log2().accuracy(c.max.as_ref()) },
     b"log10" => |v, c| if v <= 0.0 {
         Err(CalcError::ParameterError)
-    } else { v.log10().accuracy(&c.max) },
-    b"cos" => |v, c| v.cos().accuracy(&c.max),
-    b"sin" => |v, c| v.sin().accuracy(&c.max),
-    b"tan" => |v, c| v.tan().accuracy(&c.max),
-    b"sec" => |v, c| v.sec().accuracy(&c.max),
+    } else { v.log10().accuracy(c.max.as_ref()) },
+    b"cos" => |v, c| v.cos().accuracy(c.max.as_ref()),
+    b"sin" => |v, c| v.sin().accuracy(c.max.as_ref()),
+    b"tan" => |v, c| v.tan().accuracy(c.max.as_ref()),
+    b"sec" => |v, c| v.sec().accuracy(c.max.as_ref()),
     b"csc" => |v, c| if v == 0.0 {
         Err(CalcError::ParameterError)
-    } else { v.csc().accuracy(&c.max) },
+    } else { v.csc().accuracy(c.max.as_ref()) },
     b"cot" => |v, c| if v == 0.0 {
         Err(CalcError::ParameterError)
-    } else { v.cot().accuracy(&c.max) },
-    b"cosh" => |v, c| v.cosh().accuracy(&c.max),
-    b"sinh" => |v, c| v.sinh().accuracy(&c.max),
-    b"tanh" => |v, c| v.tanh().accuracy(&c.max),
-    b"ceil" => |v, c| v.ceil().accuracy(&c.max),
-    b"floor" => |v, c| v.floor().accuracy(&c.max),
-    b"fract" => |v, c| v.fract().accuracy(&c.max),
-    b"signum" => |v, c| v.signum().accuracy(&c.max),
+    } else { v.cot().accuracy(c.max.as_ref()) },
+    b"cosh" => |v, c| v.cosh().accuracy(c.max.as_ref()),
+    b"sinh" => |v, c| v.sinh().accuracy(c.max.as_ref()),
+    b"tanh" => |v, c| v.tanh().accuracy(c.max.as_ref()),
+    b"ceil" => |v, c| v.ceil().accuracy(c.max.as_ref()),
+    b"floor" => |v, c| v.floor().accuracy(c.max.as_ref()),
+    b"fract" => |v, c| v.fract().accuracy(c.max.as_ref()),
+    b"signum" => |v, c| v.signum().accuracy(c.max.as_ref()),
     b"ln_gamma" => |v, c| if v <= 0.0 {
         Err(CalcError::ParameterError)
-    } else { v.ln_gamma().accuracy(&c.max) },
-    b"j0" => |v, c| v.j0().accuracy(&c.max),
-    b"j1" => |v, c| v.j1().accuracy(&c.max),
+    } else { v.ln_gamma().accuracy(c.max.as_ref()) },
+    b"j0" => |v, c| v.j0().accuracy(c.max.as_ref()),
+    b"j1" => |v, c| v.j1().accuracy(c.max.as_ref()),
     b"y0" => |v, c| if v <= 0.0 {
         Err(CalcError::ParameterError)
-    } else { v.y0().accuracy(&c.max) },
+    } else { v.y0().accuracy(c.max.as_ref()) },
     b"y1" => |v, c| if v <= 0.0 {
         Err(CalcError::ParameterError)
-    } else { v.y1().accuracy(&c.max) },
-    b"square" => |v, c| v.square().accuracy(&c.max),
+    } else { v.y1().accuracy(c.max.as_ref()) },
+    b"square" => |v, c| v.square().accuracy(c.max.as_ref()),
     b"recip" => |v, c| if v == 0.0 {
         Err(CalcError::ParameterError)
-    } else { v.recip().accuracy(&c.max) },
+    } else { v.recip().accuracy(c.max.as_ref()) },
     b"csch" => |v, c| if v == 0.0 {
         Err(CalcError::ParameterError)
-    } else { v.csch().accuracy(&c.max) },
-    b"sech" => |v, c| v.sech().accuracy(&c.max),
+    } else { v.csch().accuracy(c.max.as_ref()) },
+    b"sech" => |v, c| v.sech().accuracy(c.max.as_ref()),
     b"coth" => |v, c| if v == 0.0 {
         Err(CalcError::ParameterError)
-    } else { v.coth().accuracy(&c.max) },
+    } else { v.coth().accuracy(c.max.as_ref()) },
     b"acos" => |v, c| if v < -1.0 || v > 1.0 {
         Err(CalcError::ParameterError)
-    } else { v.acos().accuracy(&c.max) },
+    } else { v.acos().accuracy(c.max.as_ref()) },
     b"asin" => |v, c| if v < -1.0 || v > 1.0 {
         Err(CalcError::ParameterError)
-    } else { v.asin().accuracy(&c.max) },
-    b"atan" => |v, c| v.atan().accuracy(&c.max),
+    } else { v.asin().accuracy(c.max.as_ref()) },
+    b"atan" => |v, c| v.atan().accuracy(c.max.as_ref()),
     b"acosh" => |v, c| if v < 1.0 {
         Err(CalcError::ParameterError)
-    } else { v.acosh().accuracy(&c.max) },
-    b"asinh" => |v, c| v.asinh().accuracy(&c.max),
+    } else { v.acosh().accuracy(c.max.as_ref()) },
+    b"asinh" => |v, c| v.asinh().accuracy(c.max.as_ref()),
     b"atanh" => |v, c| if v <= -1.0 || v >= 1.0 {
         Err(CalcError::ParameterError)
-    } else { v.atanh().accuracy(&c.max) },
-    b"cbrt" => |v, c| v.cbrt().accuracy(&c.max),
+    } else { v.atanh().accuracy(c.max.as_ref()) },
+    b"cbrt" => |v, c| v.cbrt().accuracy(c.max.as_ref()),
     b"sqrt" => |v, c| if v < 0.0 {
         Err(CalcError::ParameterError)
-    } else { v.sqrt().accuracy(&c.max) },
+    } else { v.sqrt().accuracy(c.max.as_ref()) },
     b"fac" => |v, c| {
         let to_u32 = v.to_u32_saturating()
             .ok_or(CalcError::UnknownError)?;
         let max_allowed = std::cmp::min(
             5000, 100+((c.prec/64)*100));
-        if to_u32 > max_allowed {
-            return Err(CalcError::ParameterError);
-        }
-        let fac = Float::factorial(to_u32);
-        Float::with_val(c.prec, fac).accuracy(&c.max)
+        if to_u32 <= max_allowed {
+            let fac = Float::factorial(to_u32);
+            Float::with_val(c.prec, fac).accuracy(c.max.as_ref())
+        } else { Err(CalcError::ParameterError) }
     },
 };
 
 /// Type alias for a two-parameter mathematical function.
 type MathFn2 = fn(Float, &Float, &Context) -> Result<Float, CalcError>;
 static MATH2: Map<&'static [u8], MathFn2> = phf_map! {
-    b"max" => |v1, v2, c| v1.max(v2).accuracy(&c.max),
-    b"min" => |v1, v2, c| v1.min(v2).accuracy(&c.max),
+    b"max" => |v1, v2, c| v1.max(v2).accuracy(c.max.as_ref()),
+    b"min" => |v1, v2, c| v1.min(v2).accuracy(c.max.as_ref()),
     b"sinu" => |v1, v2, c| {
         let to_u32 = v2.to_u32_saturating()
             .ok_or(CalcError::UnknownError)?;
-        v1.sin_u(to_u32).accuracy(&c.max)
+        v1.sin_u(to_u32).accuracy(c.max.as_ref())
     },
-    b"atan2" => |v1, v2, c| v1.atan2(v2).accuracy(&c.max),
+    b"atan2" => |v1, v2, c| v1.atan2(v2).accuracy(c.max.as_ref()),
     b"tanu" => |v1, v2, c| {
         let to_u32 = v2.to_u32_saturating()
             .ok_or(CalcError::UnknownError)?;
-        v1.tan_u(to_u32).accuracy(&c.max)
+        v1.tan_u(to_u32).accuracy(c.max.as_ref())
     },
     b"gamma_inc" => |v1, v2, c| if v1 <= 0.0 || *v2 < 0.0 {
         Err(CalcError::ParameterError)
-    } else { v1.gamma_inc(v2).accuracy(&c.max) },
-    b"positive_diff" => |v1, v2, c| v1.positive_diff(v2).accuracy(&c.max),
+    } else { v1.gamma_inc(v2).accuracy(c.max.as_ref()) },
+    b"positive_diff" => |v1, v2, c| v1.positive_diff(v2).accuracy(c.max.as_ref()),
     b"remainder" => |v1, v2, c| if *v2 == 0.0 {
         Err(CalcError::ParameterError)
-    } else { v1.remainder(v2).accuracy(&c.max) },
+    } else { v1.remainder(v2).accuracy(c.max.as_ref()) },
     b"rooti" => |v1, v2, c| if *v2 == 0.0 {
         Err(CalcError::ParameterError)
     } else {
         let to_i32 = v2.to_i32_saturating()
             .ok_or(CalcError::UnknownError)?;
-        v1.root_i(to_i32).accuracy(&c.max)
+        v1.root_i(to_i32).accuracy(c.max.as_ref())
     },
-    b"hypot" => |v1, v2, c| v1.hypot(v2).accuracy(&c.max),
+    b"hypot" => |v1, v2, c| v1.hypot(v2).accuracy(c.max.as_ref()),
     b"root" => |v1, v2, c| if *v2 <= 0.0 {
         Err(CalcError::ParameterError)
     } else {
         let to_u32 = v2.to_u32_saturating()
             .ok_or(CalcError::UnknownError)?;
-        v1.root(to_u32).accuracy(&c.max)
+        v1.root(to_u32).accuracy(c.max.as_ref())
     },
     b"agm" => |v1, v2, c| if v1 < 0.0 || *v2 < 0.0 {
         Err(CalcError::ParameterError)
-    } else { v1.agm(v2).accuracy(&c.max) },
-    b"pow" => |v1, v2, c| v1.pow(v2).accuracy(&c.max),
+    } else { v1.agm(v2).accuracy(c.max.as_ref()) },
+    b"pow" => |v1, v2, c| v1.pow(v2).accuracy(c.max.as_ref()),
     b"jn" => |v1, v2, c| {
         let to_i32 = v2.to_i32_saturating()
             .ok_or(CalcError::UnknownError)?;
-        v1.jn(to_i32).accuracy(&c.max)
+        v1.jn(to_i32).accuracy(c.max.as_ref())
     },
-    b"copysign" => |v1, v2, c| v1.copysign(v2).accuracy(&c.max),
+    b"copysign" => |v1, v2, c| v1.copysign(v2).accuracy(c.max.as_ref()),
     b"yn" => |v1, v2, c| if v1 <= 0.0 {
         Err(CalcError::ParameterError)
     } else {
         let to_i32 = v2.to_i32_saturating()
             .ok_or(CalcError::UnknownError)?;
-        v1.yn(to_i32).accuracy(&c.max)
+        v1.yn(to_i32).accuracy(c.max.as_ref())
     },
 };
 
 #[derive(Clone)]
 struct Context {
-    pub max: Float,
+    pub max: Option<Float>,
     pub prec: u32,
 }
 
@@ -266,7 +265,7 @@ fn max_value(prec: u32) -> Float {
 
 fn extract(expr: &[u8], c: &Context, n: usize, i: usize) -> Result<Float, CalcError> {
     match Float::parse(&expr[n..i]) {
-        Ok(valid) => Float::with_val(c.prec, valid).accuracy(&c.max),
+        Ok(valid) => Float::with_val(c.prec, valid).accuracy(c.max.as_ref()),
         Err(_) => Err(CalcError::InvalidNumber)
     }
 }
@@ -284,7 +283,7 @@ trait FloatExt {
     /// Floating-point modulo operation.
     fn fmod(&self, n: &Float, prec: u32) -> Float;
     /// Validates if the result is a finite number and within the allowed magnitude.
-    fn accuracy(self, n: &Float) -> Result<Float, CalcError>;
+    fn accuracy(self, n: Option<&Float>) -> Result<Float, CalcError>;
     /// Converts the arbitrary-precision float to a rounded string representation.
     /// Supports custom precision up to 10000 decimal places.
     fn to_round(&self, digits: Option<usize>) -> Result<String, CalcError>;
@@ -311,16 +310,16 @@ impl ByteExt for u8 {
     }
 
     fn computing(&self, num: &mut Calculator) -> Result<Float, CalcError> {
-        let context = &num.context;
+        let ctx = &num.context;
         let c1 = num.numbers.pop().ok_or(CalcError::ExpressionError)?;
         let c2 = num.numbers.pop().ok_or(CalcError::ExpressionError)?;
         match self {
-            b'+' => Float::with_val(context.prec, &c2 + &c1).accuracy(&context.max),
-            b'-' => Float::with_val(context.prec, &c2 - &c1).accuracy(&context.max),
-            b'*' => Float::with_val(context.prec, &c2 * &c1).accuracy(&context.max),
-            b'/' if &c1 != &0.0 => Float::with_val(context.prec, &c2 / &c1).accuracy(&context.max),
-            b'%' if &c1 != &0.0 => c2.fmod(&c1, context.prec).accuracy(&context.max),
-            b'^' => Float::with_val(context.prec, &c2.pow(&c1)).accuracy(&context.max),
+            b'+' => Float::with_val(ctx.prec, &c2 + &c1).accuracy(ctx.max.as_ref()),
+            b'-' => Float::with_val(ctx.prec, &c2 - &c1).accuracy(ctx.max.as_ref()),
+            b'*' => Float::with_val(ctx.prec, &c2 * &c1).accuracy(ctx.max.as_ref()),
+            b'/' if &c1 != &0.0 => Float::with_val(ctx.prec, &c2 / &c1).accuracy(ctx.max.as_ref()),
+            b'%' if &c1 != &0.0 => c2.fmod(&c1, ctx.prec).accuracy(ctx.max.as_ref()),
+            b'^' => Float::with_val(ctx.prec, &c2.pow(&c1)).accuracy(ctx.max.as_ref()),
             _ => Err(CalcError::DivideByZero)
         }
     }
@@ -335,12 +334,15 @@ impl FloatExt for Float {
         Float::with_val(prec, self - &m * n)
     }
 
-    fn accuracy(self, max: &Float) -> Result<Float, CalcError> {
+    fn accuracy(self, max: Option<&Float>) -> Result<Float, CalcError> {
         if self.is_nan() || self.is_infinite() {
-            Err(CalcError::BeyondAccuracy)
-        } else if self > *max || self < *max.as_neg() {
-            Err(CalcError::BeyondAccuracy)
-        } else { Ok(self) }
+            return Err(CalcError::BeyondAccuracy);
+        } else if max.is_some() {
+            let max = max.ok_or(CalcError::UnknownError)?;
+            if self > *max || self < *max.as_neg() {
+                return Err(CalcError::BeyondAccuracy);
+            }
+        } Ok(self)
     }
 
     fn to_round(&self, digits: Option<usize>) -> Result<String, CalcError> {
@@ -514,8 +516,13 @@ impl StringExt for String {
 
 impl Context {
     fn new(prec: u32) -> Self {
-        let max = max_value(prec);
-        Self { prec, max }
+        Self { prec, max: None }
+    }
+    fn set_max_some(&mut self) {
+        self.max = Some(max_value(self.prec));
+    }
+    fn set_max_none(&mut self) {
+        self.max = None;
     }
 }
 
@@ -796,6 +803,7 @@ impl Calculator {
 
     pub fn run<S: AsRef<[u8]>>(&mut self, expr: S) -> Result<Float, CalcError> {
         let vec_expr: Vec<u8>;
+        self.context.set_max_none();
         let new_expr = if self.filter {
             vec_expr = expr.as_ref().iter()
                 .copied().filter(|&b| !b.is_ascii_whitespace()).collect();
@@ -808,6 +816,7 @@ impl Calculator {
     pub fn run_round<S: AsRef<[u8]>>(
         &mut self, expr: S, digits: Option<usize>
     ) -> Result<String, CalcError> {
+        self.context.set_max_some();
         match self.run(expr) {
             Ok(value) => Ok(value.to_round(digits)?),
             Err(err) => Err(err)
