@@ -31,7 +31,7 @@ enum State {
 }
 
 #[derive(Clone)]
-enum NegPow {
+enum NegPos {
     Init,
     Record,
     Read,
@@ -254,12 +254,11 @@ pub struct Calculator {
     marker: Marker,
     context: Context,
     operator: Vec<u8>,
-    negative: Vec<bool>,
-    powindex: Vec<NegPow>,
+    negative: Vec<NegPos>,
     function: Vec<(Option<MathFn1>, Option<MathFn2>)>,
     parameter: Vec<Option<usize>>,
     numbers: Vec<Float>,
-    negpower: NegPow,
+    negstate: NegPos,
     bracket: usize,
     filter: bool,
     state: State,
@@ -292,7 +291,7 @@ trait FloatExt {
     /// Floating-point modulo operation.
     fn fmod(&self, n: &Float, prec: u32) -> Float;
     /// Validates if the result is a finite number and within the allowed magnitude.
-    fn accuracy(self, n: Option<&Float>) -> Result<Float, CalcError>;
+    fn accuracy(self, max_val: Option<&Float>) -> Result<Float, CalcError>;
     /// Converts the arbitrary-precision float to a rounded string representation.
     /// Supports custom precision up to 10000 decimal places.
     fn to_round(&self, digits: Option<usize>) -> Result<String, CalcError>;
@@ -343,11 +342,10 @@ impl FloatExt for Float {
         Float::with_val(prec, self - &m * n)
     }
 
-    fn accuracy(self, max: Option<&Float>) -> Result<Float, CalcError> {
+    fn accuracy(self, max_val: Option<&Float>) -> Result<Float, CalcError> {
         if self.is_nan() || self.is_infinite() {
             return Err(CalcError::BeyondAccuracy);
-        } else if max.is_some() {
-            let max = max.ok_or(CalcError::UnknownError)?;
+        } else if let Some(max) = max_val {
             if self > *max || self < *max.as_neg() {
                 return Err(CalcError::BeyondAccuracy);
             }
@@ -545,11 +543,10 @@ impl Calculator {
             context: Context::new(prec),
             numbers: Vec::with_capacity(96),
             operator: Vec::with_capacity(64),
-            powindex: vec![NegPow::Init; 64],
+            negative: vec![NegPos::Init; 64],
             function: vec![(None, None); 32],
             parameter: vec![None; 32],
-            negative: vec![false; 48],
-            negpower: NegPow::Init,
+            negstate: NegPos::Init,
             filter: false,
             bracket: 0,
         }
@@ -569,12 +566,7 @@ impl Calculator {
     /// Pre-allocates capacity for the operator stack to avoid frequent reallocations.
     pub fn set_operator_size(&mut self, size: usize) -> &mut Self {
         self.operator = Vec::with_capacity(size);
-        self.powindex = vec![NegPow::Init; size]; self
-    }
-
-    /// Pre-allocates capacity for the negative stack to avoid frequent reallocations.
-    pub fn set_negative_size(&mut self, size: usize) -> &mut Self {
-        self.negative = vec![false; size]; self
+        self.negative = vec![NegPos::Init; size]; self
     }
 
     /// Resizes and initializes the function and parameter storage vectors to the specified size.
@@ -587,11 +579,10 @@ impl Calculator {
         self.numbers.clear();
         self.state = State::Initial;
         self.function.fill((None, None));
-        self.powindex.fill(NegPow::Init);
-        self.negpower = NegPow::Init;
+        self.negative.fill(NegPos::Init);
+        self.negstate = NegPos::Init;
         self.marker = Marker::Init;
         self.parameter.fill(None);
-        self.negative.fill(false);
         self.operator.clear();
         self.bracket = 0;
     }
@@ -599,14 +590,7 @@ impl Calculator {
     fn is_resize_neg(&mut self, target_idx: usize) {
         if target_idx >= self.negative.len() {
             let len = self.negative.len();
-            self.negative.resize(target_idx+(len/2), false);
-        }
-    }
-
-    fn is_resize_pow(&mut self, target_idx: usize) {
-        if target_idx >= self.powindex.len() {
-            let len = self.powindex.len();
-            self.powindex.resize(target_idx+(len/2), NegPow::Init);
+            self.negative.resize(target_idx+(len/2), NegPos::Init);
         }
     }
 
@@ -629,11 +613,12 @@ impl Calculator {
             self.state = State::Operand;
         }
         while let Some(op) = self.operator.pop() {
+            let len = self.operator.len();
             let mut value = op.computing(self)?;
-            if let Some(negpow) = self.powindex.get(self.operator.len()) {
-                if op == b'^' && matches!(negpow, NegPow::Read) {
-                    self.powindex[self.operator.len()] = NegPow::Init;
-                    self.negpower = NegPow::Init;
+            if let Some(negpos) = self.negative.get(len) {
+                if op == b'^' && matches!(negpos, NegPos::Read) {
+                    self.negative[len] = NegPos::Init;
+                    self.negstate = NegPos::Init;
                     value = 0.0 - value;
                 }
             } self.numbers.push(value);
@@ -661,8 +646,8 @@ impl Calculator {
                         continue;
                     } else if !matches!(self.marker, Marker::RParen | Marker::Const | Marker::Number) {
                         if matches!(self.marker, Marker::NegSub) {
-                            self.is_resize_neg(self.bracket+1);
-                            self.negative[self.bracket+1] = true;
+                            self.is_resize_neg(self.operator.len());
+                            self.negative[self.operator.len()] = NegPos::Record;
                             locat = index;
                         }
                         self.marker = Marker::Func;
@@ -679,35 +664,36 @@ impl Calculator {
                     }
                     if ch == b'-' && matches!(self.marker, Marker::Init | Marker::LParen | Marker::Char | Marker::Comma) {
                         self.marker = Marker::NegSub;
-                        self.negpower = NegPow::Record;
+                        self.negstate = NegPos::Record;
                         continue;
                     } else if !matches!(self.marker, Marker::Number | Marker::RParen | Marker::Const) {
                         return Err(CalcError::ExpressionError);
                     }
                     if matches!(self.state, State::Operator | State::Initial) {
-                        if ch == b'^' && matches!(self.negpower, NegPow::Record) {
-                            self.is_resize_pow(self.operator.len());
-                            self.powindex[self.operator.len()] = NegPow::Read;
-                            self.negpower = NegPow::Read; locat += 1;
-                        } else if !matches!(self.negpower, NegPow::Read) {
-                            self.negpower = NegPow::Init;
+                        if ch == b'^' && matches!(self.negstate, NegPos::Record) {
+                            self.is_resize_neg(self.operator.len());
+                            self.negative[self.operator.len()] = NegPos::Read;
+                            self.negstate = NegPos::Read; locat += 1;
+                        } else if !matches!(self.negstate, NegPos::Read) {
+                            self.negstate = NegPos::Init;
                         }
                         self.numbers.push(extract(bytes, &self.context, locat, index)?);
                         self.state = State::Operand;
                     }
                     while self.operator.len() != 0 && self.operator.last() != Some(&b'(') {
-                        let curr_operator = ch.priority()?;
+                        let mut curr_operator = ch.priority()?;
                         let operator = self.operator.last().ok_or(CalcError::UnknownError)?;
                         let prev_operator = operator.priority()?;
-                        let new_operator = if prev_operator == 3 && curr_operator == 3 {
-                            curr_operator + 1 } else { curr_operator };
-                        if prev_operator >= new_operator {
+                        if prev_operator == 3 && curr_operator == 3 {
+                            curr_operator += 1 }
+                        if prev_operator >= curr_operator {
                             if let Some(op) = self.operator.pop() {
+                                let len = self.operator.len();
                                 let mut value = op.computing(self)?;
-                                if let Some(negpow) = self.powindex.get(self.operator.len()) {
-                                    if op == b'^' && matches!(negpow, NegPow::Read) {
-                                        self.powindex[self.operator.len()] = NegPow::Init;
-                                        self.negpower = NegPow::Init;
+                                if let Some(negpos) = self.negative.get(len) {
+                                    if op == b'^' && matches!(negpos, NegPos::Read) {
+                                        self.negative[len] = NegPos::Init;
+                                        self.negstate = NegPos::Init;
                                         value = 0.0 - value;
                                     }
                                 } self.numbers.push(value);
@@ -726,7 +712,7 @@ impl Calculator {
                 },
                 ch @ b'(' => {
                     if matches!(self.marker, Marker::Func) {
-                        self.negpower = NegPow::Init;
+                        self.negstate = NegPos::Init;
                         let name = &bytes[locat..index];
                         let target_idx = self.bracket + 1;
                         if let Some(&func_ptr) = MATH1.get(name) {
@@ -744,14 +730,14 @@ impl Calculator {
                     if matches!(self.state, State::Operator | State::Initial) {
                         if !matches!(self.marker, Marker::Number) {
                             locat = index + 1;
-                            self.operator.push(ch);
-                            self.bracket += 1;
                             if matches!(self.marker, Marker::NegSub) {
-                                self.is_resize_neg(self.bracket);
-                                self.negative[self.bracket] = true;
-                                self.negpower = NegPow::Init;
+                                self.is_resize_neg(self.operator.len());
+                                self.negative[self.operator.len()] = NegPos::Record;
+                                self.negstate = NegPos::Init;
                                 locat = index + 1;
                             }
+                            self.bracket += 1;
+                            self.operator.push(ch);
                             self.marker = Marker::LParen;
                             continue;
                         }
@@ -769,11 +755,12 @@ impl Calculator {
                         if self.bracket > 0 {
                             while self.operator.last() != Some(&b'(') {
                                 if let Some(op) = self.operator.pop() {
+                                    let len = self.operator.len();
                                     let mut value = op.computing(self)?;
-                                    if let Some(negpow) = self.powindex.get(self.operator.len()) {
-                                        if op == b'^' && matches!(negpow, NegPow::Read) {
-                                            self.powindex[self.operator.len()] = NegPow::Init;
-                                            self.negpower = NegPow::Init;
+                                    if let Some(negpos) = self.negative.get(len) {
+                                        if op == b'^' && matches!(negpos, NegPos::Read) {
+                                            self.negative[len] = NegPos::Init;
+                                            self.negstate = NegPos::Init;
                                             value = 0.0 - value;
                                         }
                                     } self.numbers.push(value);
@@ -789,35 +776,36 @@ impl Calculator {
                                 locat = index + 1;
                                 continue;
                             }
+                            self.operator.pop();
+                            let len = self.operator.len();
                             if let Some(func) = self.function[self.bracket].0.take() {
                                 if self.parameter[self.bracket] == Some(1) {
                                     let value = self.numbers.pop().ok_or(CalcError::UnknownError)?;
-                                    let func_val = func(value, &self.context)?;
-                                    let result = if self.negative[self.bracket] {
-                                        0.0 - func_val } else { func_val };
+                                    let mut func_val = func(value, &self.context)?;
+                                    if matches!(self.negative[len], NegPos::Record) {
+                                        func_val = 0.0 - func_val }
                                     self.parameter[self.bracket] = None;
-                                    self.negative[self.bracket] = false;
-                                    self.numbers.push(result);
+                                    self.negative[len] = NegPos::Init;
+                                    self.numbers.push(func_val);
                                 } else { return Err(CalcError::ParameterError); }
                             } else if let Some(func) = self.function[self.bracket].1.take() {
                                 if self.parameter[self.bracket] == Some(2) {
                                     let value2 = self.numbers.pop().ok_or(CalcError::UnknownError)?;
                                     let value1 = self.numbers.pop().ok_or(CalcError::UnknownError)?;
-                                    let func_val = func(value1, &value2, &self.context)?;
-                                    let result = if self.negative[self.bracket] {
-                                        0.0 - func_val } else { func_val };
+                                    let mut func_val = func(value1, &value2, &self.context)?;
+                                    if matches!(self.negative[len], NegPos::Record) {
+                                        func_val = 0.0 - func_val }
                                     self.parameter[self.bracket] = None;
-                                    self.negative[self.bracket] = false;
-                                    self.numbers.push(result);
+                                    self.negative[len] = NegPos::Init;
+                                    self.numbers.push(func_val);
                                 } else { return Err(CalcError::ParameterError); }
                             }
-                            if self.negative[self.bracket] {
+                            if matches!(self.negative[len], NegPos::Record) {
                                 let value = self.numbers.last_mut()
                                     .ok_or(CalcError::UnknownError)?;
                                 *value = 0.0 - value.clone();
                             }
                             locat = index + 1;
-                            self.operator.pop();
                             self.marker = Marker::RParen;
                             self.bracket -= 1;
                             continue;
