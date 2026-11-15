@@ -337,8 +337,8 @@ impl FloatExt for Float {
     fn fmod(&self, n: &Float, prec: u32) -> Float {
         let mut m = Float::with_val(prec, self / n);
         if self < &0.0 {
-            m.ceil_mut()
-        } else { m.floor_mut() };
+            m.ceil_mut();
+        } else { m.floor_mut(); }
         Float::with_val(prec, self - &m * n)
     }
 
@@ -392,13 +392,13 @@ impl StringExt for String {
 
     fn to_fixed_clean(&self) -> Result<String, CalcError> {
         let (negative, digits, exp) = self.parse_rug_raw();
-        let mut cursor = 0;
         let digits_len = digits.len();
         let exp_abs = (exp.unsigned_abs()+2) as usize;
         let capacity = digits_len + exp_abs;
         if exp.abs() > 10000 || capacity > 65536 {
             return Err(CalcError::BeyondAccuracy);
         }
+        let mut cursor = 0;
         let mut buf = vec![b'0'; capacity];
         if negative {
             buf[cursor] = b'-';
@@ -407,41 +407,40 @@ impl StringExt for String {
         let dot_pos: Option<usize>;
         if exp <= 0 {
             buf[cursor..cursor+2]
-            .copy_from_slice(b"0.");
+                .copy_from_slice(b"0.");
             dot_pos = Some(cursor+1);
             cursor += 2;
             let zeros = exp.abs() as usize;
             cursor += zeros;
             buf[cursor..cursor+digits_len]
-            .copy_from_slice(&digits);
+                .copy_from_slice(&digits);
             cursor += digits_len;
         } else {
             let dot_idx = exp as usize;
             if dot_idx >= digits_len {
                 buf[cursor..cursor+digits_len]
-                .copy_from_slice(&digits);
+                    .copy_from_slice(&digits);
                 cursor += digits_len;
                 let trailing_zeros = dot_idx-digits_len;
                 cursor += trailing_zeros;
                 dot_pos = None;
             } else {
                 buf[cursor..cursor+dot_idx]
-                .copy_from_slice(&digits[..dot_idx]);
+                    .copy_from_slice(&digits[..dot_idx]);
                 cursor += dot_idx;
                 buf[cursor] = b'.';
                 dot_pos = Some(cursor);
                 cursor += 1;
                 let rem = digits_len-dot_idx;
                 buf[cursor..cursor+rem]
-                .copy_from_slice(&digits[dot_idx..]);
+                    .copy_from_slice(&digits[dot_idx..]);
                 cursor += rem;
             }
         }
         let mut final_len = cursor;
         if let Some(dot) = dot_pos {
             let dec_len = cursor-dot;
-            final_len = if dec_len < 10000
-            { dec_len } else { 10000 };
+            final_len = dec_len.min(10000);
             while final_len > 0 {
                 match buf[final_len-1] {
                     b'0' => final_len -= 1,
@@ -679,7 +678,7 @@ impl Calculator {
                         let operator = self.operator.last().ok_or(CalcError::UnknownError)?;
                         let prev_operator = operator.priority()?;
                         if prev_operator == 3 && curr_operator == 3 {
-                            curr_operator += 1 }
+                            curr_operator += 1; }
                         if prev_operator >= curr_operator {
                             if let Some(op) = self.operator.pop() {
                                 let len = self.operator.len();
@@ -845,8 +844,8 @@ impl Calculator {
         let vec_expr: Vec<u8>;
         self.context.set_max_none();
         let new_expr = if self.filter {
-            vec_expr = expr.as_ref().iter()
-                .copied().filter(|&b| !b.is_ascii_whitespace()).collect();
+            vec_expr = expr.as_ref().iter().copied()
+                .filter(|&b| !b.is_ascii_whitespace()).collect();
             vec_expr.as_ref() } else { expr.as_ref() };
         self.parse(new_expr).map_err(|error| {
             self.reset(); error
