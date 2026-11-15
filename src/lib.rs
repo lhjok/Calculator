@@ -392,14 +392,11 @@ impl StringExt for String {
 
     fn to_fixed_clean(&self) -> Result<String, CalcError> {
         let (negative, digits, exp) = self.parse_rug_raw();
-        if exp.abs() > 10000 {
-            return Err(CalcError::BeyondAccuracy);
-        }
         let mut cursor = 0;
         let digits_len = digits.len();
         let exp_abs = (exp.unsigned_abs()+2) as usize;
         let capacity = digits_len + exp_abs;
-        if capacity > 65536 {
+        if exp.abs() > 10000 || capacity > 65536 {
             return Err(CalcError::BeyondAccuracy);
         }
         let mut buf = vec![b'0'; capacity];
@@ -461,9 +458,6 @@ impl StringExt for String {
 
     fn to_fixed_round(&self, prec: i32) -> Result<String, CalcError> {
         let (negative, digits, exp) = self.parse_rug_raw();
-        if exp.abs() > 10000 {
-            return Err(CalcError::BeyondAccuracy);
-        }
         let round_idx = (exp+prec) as usize;
         let mut carry = false;
         if round_idx < digits.len() && digits[round_idx] >= b'5' {
@@ -472,7 +466,7 @@ impl StringExt for String {
         let max_bound = (exp+prec)-1;
         let min_bound = std::cmp::min(0, exp-1);
         let capacity = ((max_bound-min_bound).max(0) as usize)+9;
-        if capacity > 65536 {
+        if exp.abs() > 10000 || capacity > 65536 {
             return Err(CalcError::BeyondAccuracy);
         }
         let mut buf = vec![b'0'; capacity];
@@ -783,9 +777,10 @@ impl Calculator {
                                     let value = self.numbers.pop().ok_or(CalcError::UnknownError)?;
                                     let mut func_val = func(value, &self.context)?;
                                     if matches!(self.negative[len], NegPos::Record) {
-                                        func_val = 0.0 - func_val }
+                                        func_val = 0.0 - func_val;
+                                        self.negative[len] = NegPos::Init;
+                                    }
                                     self.parameter[self.bracket] = None;
-                                    self.negative[len] = NegPos::Init;
                                     self.numbers.push(func_val);
                                 } else { return Err(CalcError::ParameterError); }
                             } else if let Some(func) = self.function[self.bracket].1.take() {
@@ -794,9 +789,10 @@ impl Calculator {
                                     let value1 = self.numbers.pop().ok_or(CalcError::UnknownError)?;
                                     let mut func_val = func(value1, &value2, &self.context)?;
                                     if matches!(self.negative[len], NegPos::Record) {
-                                        func_val = 0.0 - func_val }
+                                        func_val = 0.0 - func_val;
+                                        self.negative[len] = NegPos::Init;
+                                    }
                                     self.parameter[self.bracket] = None;
-                                    self.negative[len] = NegPos::Init;
                                     self.numbers.push(func_val);
                                 } else { return Err(CalcError::ParameterError); }
                             }
@@ -804,6 +800,7 @@ impl Calculator {
                                 let value = self.numbers.last_mut()
                                     .ok_or(CalcError::UnknownError)?;
                                 *value = 0.0 - value.clone();
+                                self.negative[len] = NegPos::Init;
                             }
                             locat = index + 1;
                             self.marker = Marker::RParen;
