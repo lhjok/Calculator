@@ -580,6 +580,25 @@ impl Calculator {
         self.bracket = 0;
     }
 
+    fn apply_unary_minus(&mut self, value: &mut Float) {
+        let len = self.operator.len();
+        if matches!(self.negative[len], NegPos::Record) {
+            self.negative[len] = NegPos::Init;
+            value = 0.0 - value;
+        }
+    }
+
+    fn apply_power_negation(&mut self, value: &mut Float) {
+        let len = self.operator.len();
+        if let Some(negpos) = self.negative.get(len) {
+            if op == b'^' && matches!(negpos, NegPos::Read) {
+                self.negative[len] = NegPos::Init;
+                self.negstate = NegPos::Init;
+                value = 0.0 - value;
+            }
+        }
+    }
+
     fn is_resize_neg(&mut self, target_idx: usize) {
         if target_idx >= self.negative.len() {
             let len = self.negative.len();
@@ -606,15 +625,9 @@ impl Calculator {
             self.state = State::Operand;
         }
         while let Some(op) = self.operator.pop() {
-            let len = self.operator.len();
             let mut value = op.computing(self)?;
-            if let Some(negpos) = self.negative.get(len) {
-                if op == b'^' && matches!(negpos, NegPos::Read) {
-                    self.negative[len] = NegPos::Init;
-                    self.negstate = NegPos::Init;
-                    value = 0.0 - value;
-                }
-            } self.numbers.push(value);
+            self.apply_power_negation(value);
+            self.numbers.push(value);
         }
         let result = self.numbers.pop()
             .ok_or(CalcError::UnknownError)?;
@@ -681,15 +694,9 @@ impl Calculator {
                             curr_operator += 1; }
                         if prev_operator >= curr_operator {
                             if let Some(op) = self.operator.pop() {
-                                let len = self.operator.len();
                                 let mut value = op.computing(self)?;
-                                if let Some(negpos) = self.negative.get(len) {
-                                    if op == b'^' && matches!(negpos, NegPos::Read) {
-                                        self.negative[len] = NegPos::Init;
-                                        self.negstate = NegPos::Init;
-                                        value = 0.0 - value;
-                                    }
-                                } self.numbers.push(value);
+                                self.apply_power_negation(value);
+                                self.numbers.push(value);
                             } else {
                                 return Err(CalcError::UnknownError);
                             }
@@ -748,15 +755,9 @@ impl Calculator {
                         if self.bracket > 0 {
                             while self.operator.last() != Some(&b'(') {
                                 if let Some(op) = self.operator.pop() {
-                                    let len = self.operator.len();
                                     let mut value = op.computing(self)?;
-                                    if let Some(negpos) = self.negative.get(len) {
-                                        if op == b'^' && matches!(negpos, NegPos::Read) {
-                                            self.negative[len] = NegPos::Init;
-                                            self.negstate = NegPos::Init;
-                                            value = 0.0 - value;
-                                        }
-                                    } self.numbers.push(value);
+                                    self.apply_power_negation(value);
+                                    self.numbers.push(value);
                                 } else {
                                     return Err(CalcError::UnknownError);
                                 }
@@ -770,15 +771,11 @@ impl Calculator {
                                 continue;
                             }
                             self.operator.pop();
-                            let len = self.operator.len();
                             if let Some(func) = self.function[self.bracket].0.take() {
                                 if self.parameter[self.bracket] == Some(1) {
                                     let value = self.numbers.pop().ok_or(CalcError::UnknownError)?;
                                     let mut func_val = func(value, &self.context)?;
-                                    if matches!(self.negative[len], NegPos::Record) {
-                                        func_val = 0.0 - func_val;
-                                        self.negative[len] = NegPos::Init;
-                                    }
+                                    self.apply_unary_minus(func_val);
                                     self.parameter[self.bracket] = None;
                                     self.numbers.push(func_val);
                                 } else { return Err(CalcError::ParameterError); }
@@ -787,14 +784,12 @@ impl Calculator {
                                     let value2 = self.numbers.pop().ok_or(CalcError::UnknownError)?;
                                     let value1 = self.numbers.pop().ok_or(CalcError::UnknownError)?;
                                     let mut func_val = func(value1, &value2, &self.context)?;
-                                    if matches!(self.negative[len], NegPos::Record) {
-                                        func_val = 0.0 - func_val;
-                                        self.negative[len] = NegPos::Init;
-                                    }
+                                    self.apply_unary_minus(func_val);
                                     self.parameter[self.bracket] = None;
                                     self.numbers.push(func_val);
                                 } else { return Err(CalcError::ParameterError); }
                             }
+                            let len = self.operator.len();
                             if matches!(self.negative[len], NegPos::Record) {
                                 let value = self.numbers.last_mut()
                                     .ok_or(CalcError::UnknownError)?;
