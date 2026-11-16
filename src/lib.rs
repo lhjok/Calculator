@@ -818,13 +818,13 @@ impl Calculator {
                             _ => return Err(CalcError::UnknownError)
                         };
                         if !matches!(self.marker, Marker::Number | Marker::Func) {
-                            let value = if matches!(self.marker, Marker::NegSub) {
-                                -Float::with_val(self.context.prec, constant)
-                            } else {
-                                Float::with_val(self.context.prec, constant)
-                            };
-                            self.numbers.push(value);
                             self.state = State::Operand;
+                            let prec = self.context.prec;
+                            let mut value = Float::with_val(prec, constant);
+                            if matches!(self.marker, Marker::NegSub) {
+                                value.neg_assign();
+                            }
+                            self.numbers.push(value);
                             self.marker = Marker::Const;
                             locat = index + 1;
                             continue;
