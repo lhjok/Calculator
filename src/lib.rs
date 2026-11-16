@@ -7,6 +7,7 @@ use std::fmt::{
     Result as FmtResult,
 };
 use rug::float::Constant;
+use rug::ops::NegAssign;
 use phf::phf_map;
 use phf::Map;
 
@@ -584,7 +585,7 @@ impl Calculator {
         let len = self.operator.len();
         if matches!(self.negative[len], NegPos::Record) {
             self.negative[len] = NegPos::Init;
-            value = 0.0 - value;
+            value.neg_assign();
         }
     }
 
@@ -594,7 +595,7 @@ impl Calculator {
             if op == b'^' && matches!(negpos, NegPos::Read) {
                 self.negative[len] = NegPos::Init;
                 self.negstate = NegPos::Init;
-                value = 0.0 - value;
+                value.neg_assign();
             }
         }
     }
@@ -626,7 +627,7 @@ impl Calculator {
         }
         while let Some(op) = self.operator.pop() {
             let mut value = op.computing(self)?;
-            self.apply_power_negation(op, value);
+            self.apply_power_negation(op, &mut value);
             self.numbers.push(value);
         }
         let result = self.numbers.pop()
@@ -695,7 +696,7 @@ impl Calculator {
                         if prev_operator >= curr_operator {
                             if let Some(op) = self.operator.pop() {
                                 let mut value = op.computing(self)?;
-                                self.apply_power_negation(op, value);
+                                self.apply_power_negation(op, &mut value);
                                 self.numbers.push(value);
                             } else {
                                 return Err(CalcError::UnknownError);
@@ -756,7 +757,7 @@ impl Calculator {
                             while self.operator.last() != Some(&b'(') {
                                 if let Some(op) = self.operator.pop() {
                                     let mut value = op.computing(self)?;
-                                    self.apply_power_negation(op, value);
+                                    self.apply_power_negation(op, &mut value);
                                     self.numbers.push(value);
                                 } else {
                                     return Err(CalcError::UnknownError);
@@ -775,7 +776,7 @@ impl Calculator {
                                 if self.parameter[self.bracket] == Some(1) {
                                     let value = self.numbers.pop().ok_or(CalcError::UnknownError)?;
                                     let mut func_val = func(value, &self.context)?;
-                                    self.apply_unary_minus(func_val);
+                                    self.apply_unary_minus(&mut func_val);
                                     self.parameter[self.bracket] = None;
                                     self.numbers.push(func_val);
                                 } else { return Err(CalcError::ParameterError); }
@@ -784,7 +785,7 @@ impl Calculator {
                                     let value2 = self.numbers.pop().ok_or(CalcError::UnknownError)?;
                                     let value1 = self.numbers.pop().ok_or(CalcError::UnknownError)?;
                                     let mut func_val = func(value1, &value2, &self.context)?;
-                                    self.apply_unary_minus(func_val);
+                                    self.apply_unary_minus(&mut func_val);
                                     self.parameter[self.bracket] = None;
                                     self.numbers.push(func_val);
                                 } else { return Err(CalcError::ParameterError); }
@@ -793,8 +794,8 @@ impl Calculator {
                             if matches!(self.negative[len], NegPos::Record) {
                                 let value = self.numbers.last_mut()
                                     .ok_or(CalcError::UnknownError)?;
-                                *value = 0.0 - value.clone();
                                 self.negative[len] = NegPos::Init;
+                                value.neg_assign();
                             }
                             locat = index + 1;
                             self.marker = Marker::RParen;
