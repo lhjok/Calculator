@@ -583,9 +583,11 @@ impl Calculator {
 
     fn apply_unary_minus(&mut self, value: &mut Float) {
         let len = self.operator.len();
-        if matches!(self.negative[len], NegPos::Record) {
-            self.negative[len] = NegPos::Init;
-            value.neg_assign();
+        if let Some(negpos) = self.negative.get(len) {
+            if matches!(negpos, NegPos::Record) {
+                self.negative[len] = NegPos::Init;
+                value.neg_assign();
+            }
         }
     }
 
@@ -817,7 +819,7 @@ impl Calculator {
                         };
                         if !matches!(self.marker, Marker::Number | Marker::Func) {
                             let value = if matches!(self.marker, Marker::NegSub) {
-                                0.0 - Float::with_val(self.context.prec, constant)
+                                -Float::with_val(self.context.prec, constant)
                             } else {
                                 Float::with_val(self.context.prec, constant)
                             };
