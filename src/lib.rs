@@ -588,7 +588,7 @@ impl Calculator {
         }
     }
 
-    fn apply_power_negation(&mut self, value: &mut Float) {
+    fn apply_power_negation(&mut self, op: u8, value: &mut Float) {
         let len = self.operator.len();
         if let Some(negpos) = self.negative.get(len) {
             if op == b'^' && matches!(negpos, NegPos::Read) {
@@ -626,7 +626,7 @@ impl Calculator {
         }
         while let Some(op) = self.operator.pop() {
             let mut value = op.computing(self)?;
-            self.apply_power_negation(value);
+            self.apply_power_negation(op, value);
             self.numbers.push(value);
         }
         let result = self.numbers.pop()
@@ -695,7 +695,7 @@ impl Calculator {
                         if prev_operator >= curr_operator {
                             if let Some(op) = self.operator.pop() {
                                 let mut value = op.computing(self)?;
-                                self.apply_power_negation(value);
+                                self.apply_power_negation(op, value);
                                 self.numbers.push(value);
                             } else {
                                 return Err(CalcError::UnknownError);
@@ -756,7 +756,7 @@ impl Calculator {
                             while self.operator.last() != Some(&b'(') {
                                 if let Some(op) = self.operator.pop() {
                                     let mut value = op.computing(self)?;
-                                    self.apply_power_negation(value);
+                                    self.apply_power_negation(op, value);
                                     self.numbers.push(value);
                                 } else {
                                     return Err(CalcError::UnknownError);
