@@ -730,6 +730,14 @@ impl Calculator {
                             return Err(CalcError::FunctionUndefined);
                         }
                     }
+                    if matches!(self.state, State::Operand) {
+                        if matches!(self.marker, Marker::RParen) {
+                            self.operator.push(b'*');
+                            self.state = State::Operator;
+                        } else {
+                            return Err(CalcError::ExpressionError);
+                        }
+                    }
                     if matches!(self.state, State::Operator | State::Initial) {
                         if !matches!(self.marker, Marker::Number) {
                             locat = index + 1;
