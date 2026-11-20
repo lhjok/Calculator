@@ -581,6 +581,11 @@ impl Calculator {
         self.bracket = 0;
     }
 
+    fn implicit_mul(&mut self) {
+        self.state = State::Operator;
+        self.operator.push(b'*');
+    }
+
     fn apply_unary_minus(&mut self, value: &mut Float) {
         let len = self.operator.len();
         if let Some(negpos) = self.negative.get(len) {
@@ -674,13 +679,11 @@ impl Calculator {
                             let ctx = &self.context;
                             self.numbers.push(extract(bytes, ctx, locat, index)?);
                             self.eval_power_first()?;
-                            self.state = State::Operator;
-                            self.operator.push(b'*');
+                            self.implicit_mul();
                             locat = index;
                         } else if matches!(self.marker, Marker::RParen) {
                             self.eval_power_first()?;
-                            self.state = State::Operator;
-                            self.operator.push(b'*');
+                            self.implicit_mul();
                             locat = index;
                         }
                         self.marker = Marker::Func;
@@ -728,9 +731,7 @@ impl Calculator {
                             } else {
                                 return Err(CalcError::UnknownError);
                             }
-                        } else {
-                            break;
-                        }
+                        } else { break; }
                     }
                     self.operator.push(ch);
                     self.state = State::Operator;
@@ -758,10 +759,7 @@ impl Calculator {
                     if matches!(self.state, State::Operand) {
                         if matches!(self.marker, Marker::RParen) {
                             self.eval_power_first()?;
-                            self.state = State::Operator;
-                            self.operator.push(b'*');
-                        } else {
-                            return Err(CalcError::ExpressionError);
+                            self.implicit_mul();
                         }
                     }
                     if matches!(self.state, State::Operator | State::Initial) {
@@ -773,8 +771,7 @@ impl Calculator {
                             let ctx = &self.context;
                             self.numbers.push(extract(bytes, ctx, locat, index)?);
                             self.eval_power_first()?;
-                            self.state = State::Operator;
-                            self.operator.push(b'*');
+                            self.implicit_mul();
                         }
                         locat = index + 1;
                         self.bracket += 1;
@@ -859,8 +856,7 @@ impl Calculator {
                     if matches!(self.state, State::Operand) {
                         if matches!(self.marker, Marker::RParen) {
                             self.eval_power_first()?;
-                            self.state = State::Operator;
-                            self.operator.push(b'*');
+                            self.implicit_mul();
                         }
                     }
                     if !matches!(self.marker, Marker::Func) {
@@ -870,8 +866,7 @@ impl Calculator {
                             let ctx = &self.context;
                             self.numbers.push(extract(bytes, ctx, locat, index)?);
                             self.eval_power_first()?;
-                            self.state = State::Operator;
-                            self.operator.push(b'*');
+                            self.implicit_mul();
                         }
                         self.numbers.push(value);
                         self.state = State::Operand;
