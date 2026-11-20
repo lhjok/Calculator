@@ -653,10 +653,15 @@ impl Calculator {
                 ch @ b'a'..=b'z' | ch @ b'E' | ch @ b'_' => {
                     if (ch == b'e' || ch == b'E') && matches!(self.marker, Marker::Number) {
                         continue;
-                    } else if !matches!(self.marker, Marker::RParen | Marker::Const | Marker::Number) {
+                    } else if !matches!(self.marker, Marker::RParen | Marker::Const) {
                         if matches!(self.marker, Marker::NegSub) {
                             self.is_resize_neg(self.operator.len());
                             self.negative[self.operator.len()] = NegPos::Record;
+                            locat = index;
+                        } else if matches!(self.marker, Marker::Number) {
+                            self.numbers.push(extract(bytes, &self.context, locat, index)?);
+                            self.state = State::Operator;
+                            self.operator.push(b'*');
                             locat = index;
                         }
                         self.marker = Marker::Func;
@@ -739,19 +744,20 @@ impl Calculator {
                         }
                     }
                     if matches!(self.state, State::Operator | State::Initial) {
-                        if !matches!(self.marker, Marker::Number) {
-                            locat = index + 1;
-                            if matches!(self.marker, Marker::NegSub) {
-                                self.is_resize_neg(self.operator.len());
-                                self.negative[self.operator.len()] = NegPos::Record;
-                                self.negstate = NegPos::Init;
-                                locat = index + 1;
-                            }
-                            self.bracket += 1;
-                            self.operator.push(ch);
-                            self.marker = Marker::LParen;
-                            continue;
+                        if matches!(self.marker, Marker::NegSub) {
+                            self.is_resize_neg(self.operator.len());
+                            self.negative[self.operator.len()] = NegPos::Record;
+                            self.negstate = NegPos::Init;
+                        } else if matches!(self.marker, Marker::Number) {
+                            self.numbers.push(extract(bytes, &self.context, locat, index)?);
+                            self.state = State::Operator;
+                            self.operator.push(b'*');
                         }
+                        locat = index + 1;
+                        self.bracket += 1;
+                        self.marker = Marker::LParen;
+                        self.operator.push(ch);
+                        continue;
                     }
                     return Err(CalcError::ExpressionError);
                 },
@@ -825,12 +831,15 @@ impl Calculator {
                             b'L' => &Constant::Log2,
                             _ => return Err(CalcError::UnknownError)
                         };
-                        if !matches!(self.marker, Marker::Number | Marker::Func) {
+                        if !matches!(self.marker, Marker::Func) {
                             self.state = State::Operand;
                             let prec = self.context.prec;
                             let mut value = Float::with_val(prec, constant);
                             if matches!(self.marker, Marker::NegSub) {
                                 value.neg_assign();
+                            } else if matches!(self.marker, Marker::Number){
+                                let prev = extract(bytes, &self.context, locat, index)?;
+                                value = prev * value;
                             }
                             self.numbers.push(value);
                             self.marker = Marker::Const;
