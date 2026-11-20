@@ -859,14 +859,10 @@ impl Calculator {
                     if matches!(self.state, State::Operand) {
                         if matches!(self.marker, Marker::RParen) {
                             self.eval_power_first()?;
-                            let last_mut = self.numbers.last_mut()
-                                .ok_or(CalcError::UnknownError)?;
-                            *last_mut = &*last_mut * value;
-                            self.marker = Marker::Const;
-                            locat = index + 1;
-                            continue;
+                            self.state = State::Operator;
+                            self.operator.push(b'*');
                         }
-                    } 
+                    }
                     if !matches!(self.marker, Marker::Func) {
                         if matches!(self.marker, Marker::NegSub) {
                             value.neg_assign();
@@ -874,9 +870,8 @@ impl Calculator {
                             let ctx = &self.context;
                             self.numbers.push(extract(bytes, ctx, locat, index)?);
                             self.eval_power_first()?;
-                            let last_val = self.numbers.pop()
-                                .ok_or(CalcError::ExpressionError)?;
-                            value = last_val * value;
+                            self.state = State::Operator;
+                            self.operator.push(b'*');
                         }
                         self.numbers.push(value);
                         self.state = State::Operand;
