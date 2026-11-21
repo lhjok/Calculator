@@ -668,28 +668,27 @@ impl Calculator {
                     return Err(CalcError::ExpressionError);
                 },
                 ch @ b'a'..=b'z' | ch @ b'E' | ch @ b'_' => {
-                    if (ch == b'e' || ch == b'E') && matches!(self.marker, Marker::Number) {
-                        continue;
-                    } else if !matches!(self.marker, Marker::Const) {
-                        if matches!(self.marker, Marker::NegSub) {
-                            self.is_resize_neg(self.operator.len());
-                            self.negative[self.operator.len()] = NegPos::Record;
-                            locat = index;
-                        } else if matches!(self.marker, Marker::Number) {
-                            let ctx = &self.context;
-                            self.numbers.push(extract(bytes, ctx, locat, index)?);
-                            self.eval_power_first()?;
-                            self.implicit_mul();
-                            locat = index;
-                        } else if matches!(self.marker, Marker::RParen) {
-                            self.eval_power_first()?;
-                            self.implicit_mul();
-                            locat = index;
+                    if ch == b'e' || ch == b'E' {
+                        if matches!(self.marker, Marker::Number) {
+                            continue;
                         }
-                        self.marker = Marker::Func;
-                        continue;
                     }
-                    return Err(CalcError::ExpressionError);
+                    if matches!(self.marker, Marker::NegSub) {
+                        self.is_resize_neg(self.operator.len());
+                        self.negative[self.operator.len()] = NegPos::Record;
+                        locat = index;
+                    } else if matches!(self.marker, Marker::RParen | Marker::Const) {
+                        self.eval_power_first()?;
+                        self.implicit_mul();
+                    } else if matches!(self.marker, Marker::Number) {
+                        let ctx = &self.context;
+                        self.numbers.push(extract(bytes, ctx, locat, index)?);
+                        self.eval_power_first()?;
+                        self.implicit_mul();
+                        locat = index;
+                    } 
+                    self.marker = Marker::Func;
+                    continue;
                 },
                 ch @ b'+' | ch @ b'-' | ch @ b'*' | ch @ b'/' | ch @ b'%' | ch @ b'^' => {
                     if (ch == b'-' || ch == b'+') && matches!(self.marker, Marker::Number) {
@@ -757,7 +756,7 @@ impl Calculator {
                         }
                     }
                     if matches!(self.state, State::Operand) {
-                        if matches!(self.marker, Marker::RParen) {
+                        if matches!(self.marker, Marker::RParen | Marker::Const) {
                             self.eval_power_first()?;
                             self.implicit_mul();
                         }
@@ -854,7 +853,7 @@ impl Calculator {
                     let prec = self.context.prec;
                     let mut value = Float::with_val(prec, constant);
                     if matches!(self.state, State::Operand) {
-                        if matches!(self.marker, Marker::RParen) {
+                        if matches!(self.marker, Marker::RParen | Marker::Const) {
                             self.eval_power_first()?;
                             self.implicit_mul();
                         }
