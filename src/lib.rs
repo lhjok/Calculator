@@ -22,6 +22,7 @@ enum Marker {
     Char,
     Const,
     Func,
+    Sci,
 }
 
 #[derive(Clone)]
@@ -670,6 +671,7 @@ impl Calculator {
                 ch @ b'a'..=b'z' | ch @ b'E' | ch @ b'_' => {
                     if ch == b'e' || ch == b'E' {
                         if matches!(self.marker, Marker::Number) {
+                            self.marker = Marker::Sci;
                             continue;
                         }
                     }
@@ -680,8 +682,10 @@ impl Calculator {
                     } else if matches!(self.marker, Marker::RParen | Marker::Const) {
                         self.eval_power_first()?;
                         self.implicit_mul();
-                    } else if matches!(self.marker, Marker::Number) {
+                    } else if matches!(self.marker, Marker::Number | Marker::Sci) {
                         let ctx = &self.context;
+                        let index = if matches!(self.marker, Marker::Sci) {
+                            index - 1 } else { index };
                         self.numbers.push(extract(bytes, ctx, locat, index)?);
                         self.eval_power_first()?;
                         self.implicit_mul();
@@ -691,11 +695,9 @@ impl Calculator {
                     continue;
                 },
                 ch @ b'+' | ch @ b'-' | ch @ b'*' | ch @ b'/' | ch @ b'%' | ch @ b'^' => {
-                    if (ch == b'-' || ch == b'+') && matches!(self.marker, Marker::Number) {
-                        let prev_byte = bytes.get(index-1);
-                        if matches!(prev_byte, Some(b'e' | b'E')) {
-                            continue;
-                        }
+                    if (ch == b'-' || ch == b'+') && matches!(self.marker, Marker::Sci) {
+                        self.marker = Marker::Number;
+                        continue;
                     }
                     if ch == b'-' && matches!(self.marker, Marker::Init | Marker::LParen | Marker::Char | Marker::Comma) {
                         self.marker = Marker::NegSub;
