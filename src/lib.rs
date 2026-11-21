@@ -696,8 +696,9 @@ impl Calculator {
                 },
                 ch @ b'+' | ch @ b'-' | ch @ b'*' | ch @ b'/' | ch @ b'%' | ch @ b'^' => {
                     if (ch == b'-' || ch == b'+') && matches!(self.marker, Marker::Sci) {
-                        self.marker = Marker::Number;
-                        continue;
+                        self.marker = Marker::Number; continue;
+                    } else if matches!(self.marker, Marker::Sci) {
+                        return Err(CalcError::InvalidNumber);
                     }
                     if ch == b'-' && matches!(self.marker, Marker::Init | Marker::LParen | Marker::Char | Marker::Comma) {
                         self.marker = Marker::NegSub;
@@ -768,7 +769,7 @@ impl Calculator {
                             self.is_resize_neg(self.operator.len());
                             self.negative[self.operator.len()] = NegPos::Record;
                             self.negstate = NegPos::Init;
-                        } else if matches!(self.marker, Marker::Number) {
+                        } else if matches!(self.marker, Marker::Number | Marker::Sci) {
                             let ctx = &self.context;
                             self.numbers.push(extract(bytes, ctx, locat, index)?);
                             self.eval_power_first()?;
@@ -784,7 +785,7 @@ impl Calculator {
                 },
                 ch @ b')' | ch @ b',' => {
                     if matches!(self.state, State::Operator | State::Initial) {
-                        if matches!(self.marker, Marker::Number) {
+                        if matches!(self.marker, Marker::Number | Marker::Sci) {
                             let ctx = &self.context;
                             self.numbers.push(extract(bytes, ctx, locat, index)?);
                             self.state = State::Operand;
@@ -863,7 +864,7 @@ impl Calculator {
                     if !matches!(self.marker, Marker::Func) {
                         if matches!(self.marker, Marker::NegSub) {
                             value.neg_assign();
-                        } else if matches!(self.marker, Marker::Number){
+                        } else if matches!(self.marker, Marker::Number | Marker::Sci) {
                             let ctx = &self.context;
                             self.numbers.push(extract(bytes, ctx, locat, index)?);
                             self.eval_power_first()?;
