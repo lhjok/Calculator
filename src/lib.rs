@@ -662,11 +662,12 @@ impl Calculator {
                 b'0'..=b'9' | b'.' => {
                     if matches!(self.marker, Marker::Func) {
                         continue;
-                    } else if !matches!(self.marker, Marker::RParen | Marker::Const) {
-                        self.marker = Marker::Number;
-                        continue;
+                    } else if matches!(self.marker, Marker::RParen | Marker::Const) {
+                        self.eval_power_first()?;
+                        self.implicit_mul();
                     }
-                    return Err(CalcError::ExpressionError);
+                    self.marker = Marker::Number;
+                    continue;
                 },
                 ch @ b'a'..=b'z' | ch @ b'E' | ch @ b'_' => {
                     if ch == b'e' || ch == b'E' {
