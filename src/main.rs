@@ -126,6 +126,9 @@ fn handle_key(
                         '*' => Some(operator(String::from("×"))),
                         '/' => Some(operator(String::from("÷"))),
                         ch @ '0'..='9' | ch @ '.' => { match ch {
+                            '1' => if modi.shift() {
+                                Some(operator(String::from("!")))
+                            } else { Some(Message::Digit(String::from("1"))) },
                             '5' => if modi.shift() {
                                 Some(operator(String::from("%")))
                             } else { Some(Message::Digit(String::from("5"))) },

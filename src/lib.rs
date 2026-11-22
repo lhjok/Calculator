@@ -742,6 +742,19 @@ impl Calculator {
                     locat = index + 1;
                     continue;
                 },
+                b'!' => {
+                    let func = MATH1.get(b"fac").unwrap();
+                    if matches!(self.marker, Marker::Number) {
+                        let value = extract(bytes, &self.context, locat, index)?;
+                        self.numbers.push(func(value, &self.context)?);
+                    } else if matches!(self.marker, Marker::RParen | Marker::Const) {
+                        let value = self.numbers.pop().ok_or(CalcError::UnknownError)?;
+                        self.numbers.push(func(value, &self.context)?);
+                    } else { return Err(CalcError::ExpressionError); }
+                    self.state = State::Operand;
+                    locat = index + 1;
+                    continue;
+                },
                 ch @ b'(' => {
                     if matches!(self.marker, Marker::Func) {
                         self.negstate = NegPos::Init;
@@ -759,30 +772,25 @@ impl Calculator {
                             return Err(CalcError::FunctionUndefined);
                         }
                     }
-                    if matches!(self.state, State::Operand) {
-                        if matches!(self.marker, Marker::RParen | Marker::Const) {
-                            self.eval_power_first()?;
-                            self.implicit_mul();
-                        }
+                    if matches!(self.marker, Marker::RParen | Marker::Const) {
+                        self.eval_power_first()?;
+                        self.implicit_mul();
                     }
-                    if matches!(self.state, State::Operator | State::Initial) {
-                        if matches!(self.marker, Marker::NegSub) {
-                            self.is_resize_neg(self.operator.len());
-                            self.negative[self.operator.len()] = NegPos::Record;
-                            self.negstate = NegPos::Init;
-                        } else if matches!(self.marker, Marker::Number | Marker::Sci) {
-                            let ctx = &self.context;
-                            self.numbers.push(extract(bytes, ctx, locat, index)?);
-                            self.eval_power_first()?;
-                            self.implicit_mul();
-                        }
-                        locat = index + 1;
-                        self.bracket += 1;
-                        self.marker = Marker::LParen;
-                        self.operator.push(ch);
-                        continue;
+                    if matches!(self.marker, Marker::NegSub) {
+                        self.is_resize_neg(self.operator.len());
+                        self.negative[self.operator.len()] = NegPos::Record;
+                        self.negstate = NegPos::Init;
+                    } else if matches!(self.marker, Marker::Number | Marker::Sci) {
+                        let ctx = &self.context;
+                        self.numbers.push(extract(bytes, ctx, locat, index)?);
+                        self.eval_power_first()?;
+                        self.implicit_mul();
                     }
-                    return Err(CalcError::ExpressionError);
+                    locat = index + 1;
+                    self.bracket += 1;
+                    self.marker = Marker::LParen;
+                    self.operator.push(ch);
+                    continue;
                 },
                 ch @ b')' | ch @ b',' => {
                     if matches!(self.state, State::Operator | State::Initial) {
@@ -856,11 +864,9 @@ impl Calculator {
                     };
                     let prec = self.context.prec;
                     let mut value = Float::with_val(prec, constant);
-                    if matches!(self.state, State::Operand) {
-                        if matches!(self.marker, Marker::RParen | Marker::Const) {
-                            self.eval_power_first()?;
-                            self.implicit_mul();
-                        }
+                    if matches!(self.marker, Marker::RParen | Marker::Const) {
+                        self.eval_power_first()?;
+                        self.implicit_mul();
                     }
                     if !matches!(self.marker, Marker::Func) {
                         if matches!(self.marker, Marker::NegSub) {
