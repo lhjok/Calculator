@@ -761,7 +761,7 @@ impl Calculator {
                     }
                     while self.operator.len() != 0 && self.operator.last() != Some(&b'(') {
                         let mut curr_operator = ch.priority()?;
-                        let operator = self.operator.last().ok_or(CalcError::UnknownError)?;
+                        let operator = self.operator.last().ok_or(CalcError::StackError)?;
                         let prev_operator = operator.priority()?;
                         if prev_operator == 3 && curr_operator == 3 {
                             curr_operator += 1; }
@@ -890,7 +890,7 @@ impl Calculator {
                             let len = self.operator.len();
                             if matches!(self.negative[len], NegPos::Record) {
                                 let value = self.numbers.last_mut()
-                                    .ok_or(CalcError::UnknownError)?;
+                                    .ok_or(CalcError::StackError)?;
                                 self.negative[len] = NegPos::Init;
                                 value.neg_assign();
                             }
