@@ -49,8 +49,10 @@ pub enum CalcError {
     Custom(String),
     /// The character is not recognized as a valid operator or command.
     UnknownOperator,
-    /// Syntax error in the expression (e.g., unbalanced parentheses).
+    /// General syntax or structural error in the expression (e.g., unexpected token or missing operand).
     ExpressionError(usize),
+    /// Unmatched or unbalanced parentheses (`(` or `)`) in the expression.
+    UnmatchedParentheses(usize),
     /// The input value is outside the function's domain (e.g., `ln(-1)`).
     ParameterError((usize, String)),
     /// The specified function name does not exist.
@@ -74,11 +76,12 @@ impl Display for CalcError {
             CalcError::UnknownError => write!(f, "Unknown Error"),
             CalcError::BeyondAccuracy => write!(f, "Beyond Accuracy"),
             CalcError::UnknownOperator => write!(f, "Unknown Operator"),
-            CalcError::ParameterError((locat, error)) => write!(f, "{} Locat({})", error, locat),
-            CalcError::ExpressionError(locat) => write!(f, "Expression Error: Locat {}", locat),
-            CalcError::FunctionUndefined((l, i)) => write!(f, "Function Undefined: From {} to {}", l, i),
-            CalcError::OperatorUndefined(locat) => write!(f, "Operator Undefined: Locat {}", locat),
-            CalcError::InvalidNumber((l, i)) => write!(f, "Invalid Number: From {} to {}", l, i),
+            CalcError::ParameterError((locat, error)) => write!(f, "{} Column {}", error, locat),
+            CalcError::ExpressionError(locat) => write!(f, "Expression Error: Column {}", locat),
+            CalcError::UnmatchedParentheses(number) => write!(f, "Unmatched Parentheses: {} unmatched", number),
+            CalcError::FunctionUndefined((l, i)) => write!(f, "Function Undefined: Columns {} - {}", l, i),
+            CalcError::OperatorUndefined(locat) => write!(f, "Operator Undefined: Column {}", locat),
+            CalcError::InvalidNumber((l, i)) => write!(f, "Invalid Number: Columns {} - {}", l, i),
             CalcError::EmptyExpression => write!(f, "Empty Expression"),
             CalcError::DivideByZero => write!(f, "Divide By Zero"),
             CalcError::StackError => write!(f, "Stack Error"),
@@ -672,8 +675,10 @@ impl Calculator {
     fn finish(&mut self, expr: &[u8], locat: usize, end_idx: usize) -> Result<Float, CalcError> {
         if matches!(self.marker, Marker::Init) {
             return Err(CalcError::EmptyExpression);
-        } else if self.bracket > 0 || matches!(self.marker, Marker::NegSub | Marker::Char | Marker::Func) {
+        } else if matches!(self.marker, Marker::NegSub | Marker::Char | Marker::Func) {
             return Err(CalcError::ExpressionError(end_idx));
+        } else if self.bracket > 0 {
+            return Err(CalcError::UnmatchedParentheses(self.bracket));
         }
         if matches!(self.state, State::Operator | State::Initial) {
             self.numbers.push(extract(expr, &self.context, locat, end_idx)?);
