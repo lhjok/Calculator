@@ -190,7 +190,7 @@ static MATH1: Map<&'static [u8], MathFn1> = phf_map! {
         Err(CalcError::ParameterError((n, err)))
     } else { v.acosh().accuracy(c.max.as_ref()) },
     b"asinh" => |v, c, _| v.asinh().accuracy(c.max.as_ref()),
-    b"atanh" => |v, c, _| if v <= -1.0 || v >= 1.0 {
+    b"atanh" => |v, c, n| if v <= -1.0 || v >= 1.0 {
         let err = "Requires Atanh Param > -1 or < 1".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.atanh().accuracy(c.max.as_ref()) },
@@ -740,7 +740,7 @@ impl Calculator {
                         self.negstate = NegPos::Record;
                         continue;
                     } else if !matches!(self.marker, Marker::Number | Marker::RParen | Marker::Const) {
-                        return Err(CalcError::ExpressionError(index));
+                        return Err(CalcError::ExpressionError(index+1));
                     }
                     if matches!(self.state, State::Operator | State::Initial) {
                         if ch == b'^' && matches!(self.negstate, NegPos::Record) {
@@ -787,7 +787,7 @@ impl Calculator {
                         let value = self.numbers.pop().ok_or(CalcError::StackError)?;
                         self.numbers.push(func(value, &self.context, index)?);
                     } else {
-                        return Err(CalcError::ExpressionError(index));
+                        return Err(CalcError::ExpressionError(index+1));
                     }
                     self.state = State::Operand;
                     locat = index + 1;
@@ -867,7 +867,7 @@ impl Calculator {
                                     self.numbers.push(func_val);
                                 } else {
                                     let err = "Expecting a parameter".to_owned();
-                                    return Err(CalcError::ParameterError((index, err)));
+                                    return Err(CalcError::ParameterError((index+1, err)));
                                 }
                             } else if let Some(func) = self.function[self.bracket].1.take() {
                                 if self.parameter[self.bracket] == Some(2) {
@@ -879,7 +879,7 @@ impl Calculator {
                                     self.numbers.push(func_val);
                                 } else {
                                     let err = "Expects two parameters".to_owned();
-                                    return Err(CalcError::ParameterError((index, err)));
+                                    return Err(CalcError::ParameterError((index+1, err)));
                                 }
                             }
                             let len = self.operator.len();
@@ -895,7 +895,7 @@ impl Calculator {
                             continue;
                         }
                     }
-                    return Err(CalcError::ExpressionError(index));
+                    return Err(CalcError::ExpressionError(index+1));
                 },
                 b'=' => return self.finish(bytes, locat, index),
                 ch @ b'P' | ch @ b'Y' | ch @ b'G' | ch @ b'L' => {
@@ -927,9 +927,9 @@ impl Calculator {
                         locat = index + 1;
                         continue;
                     }
-                    return Err(CalcError::ExpressionError(index));
+                    return Err(CalcError::ExpressionError(index+1));
                 },
-                _ => return Err(CalcError::OperatorUndefined(index)),
+                _ => return Err(CalcError::OperatorUndefined(index+1)),
             }
         }
         self.finish(bytes, locat, bytes.len())
