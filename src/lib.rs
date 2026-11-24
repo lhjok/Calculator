@@ -180,11 +180,11 @@ static MATH1: Map<&'static [u8], MathFn1> = phf_map! {
         Err(CalcError::ParameterError((n, err)))
     } else { v.coth().accuracy(c.max.as_ref()) },
     b"acos" => |v, c, n| if v < -1.0 || v > 1.0 {
-        let err = "Requires Acos Param > -1 or < 1".to_owned();
+        let err = "Requires Acos Param ≥ -1 or ≤ 1".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.acos().accuracy(c.max.as_ref()) },
     b"asin" => |v, c, n| if v < -1.0 || v > 1.0 {
-        let err = "Requires Asin Param > -1 or < 1".to_owned();
+        let err = "Requires Asin Param ≥ -1 or ≤ 1".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.asin().accuracy(c.max.as_ref()) },
     b"atan" => |v, c, _| v.atan().accuracy(c.max.as_ref()),
@@ -237,7 +237,7 @@ static MATH2: Map<&'static [u8], MathFn2> = phf_map! {
     b"atan2" => |v1, v2, c, _| v1.atan2(v2).accuracy(c.max.as_ref()),
     b"positive_diff" => |v1, v2, c, _| v1.positive_diff(v2).accuracy(c.max.as_ref()),
     b"copysign" => |v1, v2, c, _| v1.copysign(v2).accuracy(c.max.as_ref()),
-    b"remainder" => |v1, v2, c, n| if *v2 == 0.0 {
+    b"remainder" | b"fmod" | b"rem" => |v1, v2, c, n| if *v2 == 0.0 {
         let err = "Requires Remainder Param(2) ≠ 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v1.remainder(v2).accuracy(c.max.as_ref()) },
@@ -325,8 +325,6 @@ trait ByteExt {
 
 /// Extension trait for `rug::Float` to provide formatting and accuracy checks.
 trait FloatExt {
-    /// Floating-point modulo operation.
-    fn fmod(&self, n: &Float, prec: u32) -> Float;
     /// Validates if the result is a finite number and within the allowed magnitude.
     fn accuracy(self, max_val: Option<&Float>) -> Result<Float, CalcError>;
     /// Converts the arbitrary-precision float to a rounded string representation.
@@ -363,7 +361,7 @@ impl ByteExt for u8 {
             b'-' => Float::with_val(ctx.prec, &c2 - &c1).accuracy(ctx.max.as_ref()),
             b'*' => Float::with_val(ctx.prec, &c2 * &c1).accuracy(ctx.max.as_ref()),
             b'/' if &c1 != &0.0 => Float::with_val(ctx.prec, &c2 / &c1).accuracy(ctx.max.as_ref()),
-            b'%' if &c1 != &0.0 => c2.fmod(&c1, ctx.prec).accuracy(ctx.max.as_ref()),
+            b'%' if &c1 != &0.0 => c2.remainder(&c1).accuracy(ctx.max.as_ref()),
             b'^' => Float::with_val(ctx.prec, &c2.pow(&c1)).accuracy(ctx.max.as_ref()),
             _ => Err(CalcError::DivideByZero),
         }
@@ -371,14 +369,6 @@ impl ByteExt for u8 {
 }
 
 impl FloatExt for Float {
-    fn fmod(&self, n: &Float, prec: u32) -> Float {
-        let mut m = Float::with_val(prec, self / n);
-        if self < &0.0 {
-            m.ceil_mut();
-        } else { m.floor_mut(); }
-        Float::with_val(prec, self - &m * n)
-    }
-
     fn accuracy(self, max_val: Option<&Float>) -> Result<Float, CalcError> {
         if self.is_nan() || self.is_infinite() {
             return Err(CalcError::BeyondAccuracy);
