@@ -209,11 +209,11 @@ static MATH1: Map<&'static [u8], MathFn1> = phf_map! {
     } else {
         let to_u32 = v.to_u32_saturating().ok_or(CalcError::UnknownError)?;
         let max_allowed = std::cmp::min(10000, 100+((c.prec/64)*100));
-        if to_u32 <= max_allowed {
+        if to_u32 < max_allowed {
             let fac = Float::factorial(to_u32);
             Float::with_val(c.prec, fac).accuracy(c.max.as_ref())
         } else {
-            let err = "Factorial Requires Param ≤ 10000".to_owned();
+            let err = format!("Factorial Requires Expected Param < {}", max_allowed);
             Err(CalcError::ParameterError((n, err)))
         }
     },
