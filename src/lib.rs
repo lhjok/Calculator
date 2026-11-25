@@ -102,7 +102,7 @@ static MATH1: Map<&'static [u8], MathFn1> = phf_map! {
     b"erfc" => |v, c, _| v.erfc().accuracy(c.max.as_ref()),
     b"abs" => |v, c, _| v.abs().accuracy(c.max.as_ref()),
     b"ln" => |v, c, n| if v <= 0.0 {
-        let err = "Requires Ln Param > 0".to_owned();
+        let err = "Ln Requires Param > 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.ln().accuracy(c.max.as_ref()) },
     b"exp" => |v, c, _| v.exp().accuracy(c.max.as_ref()),
@@ -110,27 +110,27 @@ static MATH1: Map<&'static [u8], MathFn1> = phf_map! {
     b"exp10" => |v, c, _| v.exp10().accuracy(c.max.as_ref()),
     b"trunc" => |v, c, _| v.trunc().accuracy(c.max.as_ref()),
     b"zeta" => |v, c, n| if v == 1.0 {
-        let err = "Requires Zeta Param ≠ 1".to_owned();
+        let err = "Zeta Requires Param ≠ 1".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.zeta().accuracy(c.max.as_ref()) },
     b"gamma" => |v, c, n| if v <= 0.0 && v.clone().fract() == 0.0 {
-        let err = "Requires Gamma Param > 0".to_owned();
+        let err = "Gamma Requires Param > 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.gamma().accuracy(c.max.as_ref()) },
     b"digamma" => |v, c, n| if v <= 0.0 && v.clone().fract() == 0.0 {
-        let err = "Requires DiGamma Param > 0".to_owned();
+        let err = "DiGamma Requires Param > 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.digamma().accuracy(c.max.as_ref()) },
     b"eint" => |v, c, n| if v == 0.0 {
-        let err = "Requires Eint Param ≠ 0".to_owned();
+        let err = "Eint Requires Param ≠ 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.eint().accuracy(c.max.as_ref()) },
     b"log2" => |v, c, n| if v <= 0.0 {
-        let err = "Requires Log2 Param > 0".to_owned();
+        let err = "Log2 Requires Param > 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.log2().accuracy(c.max.as_ref()) },
     b"log10" => |v, c, n| if v <= 0.0 {
-        let err = "Requires Log10 Param > 0".to_owned();
+        let err = "Log10 Requires Param > 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.log10().accuracy(c.max.as_ref()) },
     b"cos" => |v, c, _| v.cos().accuracy(c.max.as_ref()),
@@ -138,11 +138,11 @@ static MATH1: Map<&'static [u8], MathFn1> = phf_map! {
     b"tan" => |v, c, _| v.tan().accuracy(c.max.as_ref()),
     b"sec" => |v, c, _| v.sec().accuracy(c.max.as_ref()),
     b"csc" => |v, c, n| if v == 0.0 {
-        let err = "Requires Csc Param ≠ 0".to_owned();
+        let err = "Csc Requires Param ≠ 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.csc().accuracy(c.max.as_ref()) },
     b"cot" => |v, c, n| if v == 0.0 {
-        let err = "Requires Cot Param ≠ 0".to_owned();
+        let err = "Cot Requires Param ≠ 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.cot().accuracy(c.max.as_ref()) },
     b"cosh" => |v, c, _| v.cosh().accuracy(c.max.as_ref()),
@@ -153,66 +153,67 @@ static MATH1: Map<&'static [u8], MathFn1> = phf_map! {
     b"floor" => |v, c, _| v.floor().accuracy(c.max.as_ref()),
     b"fract" => |v, c, _| v.fract().accuracy(c.max.as_ref()),
     b"ln_gamma" => |v, c, n| if v <= 0.0 {
-        let err = "Requires LnGamma Param > 0".to_owned();
+        let err = "LnGamma Requires Param > 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.ln_gamma().accuracy(c.max.as_ref()) },
     b"j0" => |v, c, _| v.j0().accuracy(c.max.as_ref()),
     b"j1" => |v, c, _| v.j1().accuracy(c.max.as_ref()),
     b"y0" => |v, c, n| if v <= 0.0 {
-        let err = "Requires Y0 Param > 0".to_owned();
+        let err = "Y0 Requires Param > 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.y0().accuracy(c.max.as_ref()) },
     b"y1" => |v, c, n| if v <= 0.0 {
-        let err = "Requires Y1 Param > 0".to_owned();
+        let err = "Y1 Requires Param > 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.y1().accuracy(c.max.as_ref()) },
     b"square" => |v, c, _| v.square().accuracy(c.max.as_ref()),
     b"recip" => |v, c, n| if v == 0.0 {
-        let err = "Requires Recip Param ≠ 0".to_owned();
+        let err = "Recip Requires Param ≠ 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.recip().accuracy(c.max.as_ref()) },
     b"csch" => |v, c, n| if v == 0.0 {
-        let err = "Requires Csch Param ≠ 0".to_owned();
+        let err = "Csch Requires Param ≠ 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.csch().accuracy(c.max.as_ref()) },
     b"sech" => |v, c, _| v.sech().accuracy(c.max.as_ref()),
     b"coth" => |v, c, n| if v == 0.0 {
-        let err = "Requires Coth Param ≠ 0".to_owned();
+        let err = "Coth Requires Param ≠ 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.coth().accuracy(c.max.as_ref()) },
     b"acos" => |v, c, n| if v < -1.0 || v > 1.0 {
-        let err = "Requires Acos Param ≥ -1 or ≤ 1".to_owned();
+        let err = "Acos Requires Param ≥ -1 and ≤ 1".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.acos().accuracy(c.max.as_ref()) },
     b"asin" => |v, c, n| if v < -1.0 || v > 1.0 {
-        let err = "Requires Asin Param ≥ -1 or ≤ 1".to_owned();
+        let err = "Asin Requires Param ≥ -1 and ≤ 1".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.asin().accuracy(c.max.as_ref()) },
     b"atan" => |v, c, _| v.atan().accuracy(c.max.as_ref()),
     b"acosh" => |v, c, n| if v < 1.0 {
-        let err = "Requires Acosh Param ≥ 0".to_owned();
+        let err = "Acosh Requires Param ≥ 1".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.acosh().accuracy(c.max.as_ref()) },
     b"asinh" => |v, c, _| v.asinh().accuracy(c.max.as_ref()),
     b"atanh" => |v, c, n| if v <= -1.0 || v >= 1.0 {
-        let err = "Requires Atanh Param > -1 or < 1".to_owned();
+        let err = "Atanh Requires Param > -1 and < 1".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.atanh().accuracy(c.max.as_ref()) },
     b"cbrt" => |v, c, _| v.cbrt().accuracy(c.max.as_ref()),
     b"sqrt" => |v, c, n| if v < 0.0 {
-        let err = "Requires Sqrt Param ≥ 0".to_owned();
+        let err = "Sqrt Requires Param ≥ 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.sqrt().accuracy(c.max.as_ref()) },
-    b"fac" => |v, c, n| {
-        let to_u32 = v.to_u32_saturating()
-            .ok_or(CalcError::UnknownError)?;
-        let max_allowed = std::cmp::min(
-            5000, 100+((c.prec/64)*100));
+    b"fac" => |v, c, n| if v < 0.0 || v.clone().fract() != 0.0 {
+        let err = "Factorial Requires Param Non-negative Integer".to_owned();
+        Err(CalcError::ParameterError((n, err)))
+    } else {
+        let to_u32 = v.to_u32_saturating().ok_or(CalcError::UnknownError)?;
+        let max_allowed = std::cmp::min(10000, 100+((c.prec/64)*100));
         if to_u32 <= max_allowed {
             let fac = Float::factorial(to_u32);
             Float::with_val(c.prec, fac).accuracy(c.max.as_ref())
         } else {
-            let err = "Requires Factorial Param ≤ 5000".to_owned();
+            let err = "Factorial Requires Param ≤ 10000".to_owned();
             Err(CalcError::ParameterError((n, err)))
         }
     },
@@ -221,62 +222,65 @@ static MATH1: Map<&'static [u8], MathFn1> = phf_map! {
 /// Type alias for a two-parameter mathematical function.
 type MathFn2 = fn(Float, &Float, &Context, usize) -> Result<Float, CalcError>;
 static MATH2: Map<&'static [u8], MathFn2> = phf_map! {
-    b"sinu" => |v1, v2, c, _| {
-        let to_u32 = v2.to_u32_saturating()
-            .ok_or(CalcError::UnknownError)?;
+    b"sinu" => |v1, v2, c, n| if *v2 < 0.0 || v2.clone().fract() != 0.0 {
+        let err = "SinU Requires Param2 Non-negative Integer".to_owned();
+        Err(CalcError::ParameterError((n, err)))
+    } else {
+        let to_u32 = v2.to_u32_saturating().ok_or(CalcError::UnknownError)?;
         v1.sin_u(to_u32).accuracy(c.max.as_ref())
     },
-    b"tanu" => |v1, v2, c, _| {
-        let to_u32 = v2.to_u32_saturating()
-            .ok_or(CalcError::UnknownError)?;
+    b"tanu" => |v1, v2, c, n| if *v2 < 0.0 || v2.clone().fract() != 0.0 {
+        let err = "TanU Requires Param2 Non-negative Integer".to_owned();
+        Err(CalcError::ParameterError((n, err)))
+    } else {
+        let to_u32 = v2.to_u32_saturating().ok_or(CalcError::UnknownError)?;
         v1.tan_u(to_u32).accuracy(c.max.as_ref())
     },
     b"gamma_inc" => |v1, v2, c, n| if v1 <= 0.0 || *v2 < 0.0 {
-        let err = "Requires GammaInc Param(1 and 2) v1 > 0 and v2 ≥ 0 ".to_owned();
+        let err = "GammaInc Requires Param(1 and 2) v1 > 0 and v2 ≥ 0 ".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v1.gamma_inc(v2).accuracy(c.max.as_ref()) },
+    b"remainder" | b"fmod" | b"rem" => |v1, v2, c, n| if *v2 == 0.0 {
+        let err = "Remainder Requires Param2 ≠ 0".to_owned();
+        Err(CalcError::ParameterError((n, err)))
+    } else { v1.remainder(v2).accuracy(c.max.as_ref()) },
+    b"agm" => |v1, v2, c, n| if v1 < 0.0 || *v2 < 0.0 {
+        let err = "Agm Requires Param(1 and 2) ≥ 0".to_owned();
+        Err(CalcError::ParameterError((n, err)))
+    } else { v1.agm(v2).accuracy(c.max.as_ref()) },
+    b"max" => |v1, v2, c, _| v1.max(v2).accuracy(c.max.as_ref()),
+    b"min" => |v1, v2, c, _| v1.min(v2).accuracy(c.max.as_ref()),
     b"atan2" => |v1, v2, c, _| v1.atan2(v2).accuracy(c.max.as_ref()),
     b"positive_diff" => |v1, v2, c, _| v1.positive_diff(v2).accuracy(c.max.as_ref()),
     b"copysign" => |v1, v2, c, _| v1.copysign(v2).accuracy(c.max.as_ref()),
-    b"remainder" | b"fmod" | b"rem" => |v1, v2, c, n| if *v2 == 0.0 {
-        let err = "Requires Remainder Param(2) ≠ 0".to_owned();
-        Err(CalcError::ParameterError((n, err)))
-    } else { v1.remainder(v2).accuracy(c.max.as_ref()) },
-    b"rooti" => |v1, v2, c, n| if *v2 == 0.0 {
-        let err = "Requires RootI Param(2) ≠ 0".to_owned();
-        Err(CalcError::ParameterError((n, err)))
-    } else {
-        let to_i32 = v2.to_i32_saturating()
-            .ok_or(CalcError::UnknownError)?;
-        v1.root_i(to_i32).accuracy(c.max.as_ref())
-    },
-    b"max" => |v1, v2, c, _| v1.max(v2).accuracy(c.max.as_ref()),
-    b"min" => |v1, v2, c, _| v1.min(v2).accuracy(c.max.as_ref()),
     b"hypot" => |v1, v2, c, _| v1.hypot(v2).accuracy(c.max.as_ref()),
     b"pow" => |v1, v2, c, _| v1.pow(v2).accuracy(c.max.as_ref()),
-    b"root" => |v1, v2, c, n| if *v2 <= 0.0 {
-        let err = "Requires Root Param(2) > 0".to_owned();
+    b"root" => |v1, v2, c, n| if *v2 <= 0.0 || v2.clone().fract() != 0.0 {
+        let err = "Root Requires Param2 > 0 and Non-negative Integer".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else {
-        let to_u32 = v2.to_u32_saturating()
-            .ok_or(CalcError::UnknownError)?;
+        let to_u32 = v2.to_u32_saturating().ok_or(CalcError::UnknownError)?;
         v1.root(to_u32).accuracy(c.max.as_ref())
     },
-    b"agm" => |v1, v2, c, n| if v1 < 0.0 || *v2 < 0.0 {
-        let err = "Requires Agm Param(1 and 2) ≥ 0".to_owned();
-        Err(CalcError::ParameterError((n, err)))
-    } else { v1.agm(v2).accuracy(c.max.as_ref()) },
-    b"jn" => |v1, v2, c, _| {
-        let to_i32 = v2.to_i32_saturating()
-            .ok_or(CalcError::UnknownError)?;
-        v1.jn(to_i32).accuracy(c.max.as_ref())
-    },
-    b"yn" => |v1, v2, c, n| if v1 <= 0.0 {
-        let err = "Requires Yn Param(1) > 0".to_owned();
+    b"rooti" => |v1, v2, c, n| if *v2 == 0.0 || v2.clone().fract() != 0.0 {
+        let err = "RootI Requires Param2 ≠ 0 and Exact Integer".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else {
-        let to_i32 = v2.to_i32_saturating()
-            .ok_or(CalcError::UnknownError)?;
+        let to_i32 = v2.to_i32_saturating().ok_or(CalcError::UnknownError)?;
+        v1.root_i(to_i32).accuracy(c.max.as_ref())
+    },
+    b"jn" => |v1, v2, c, n| if v2.clone().fract() != 0.0 {
+        let err = "Jn Requires Param2 Exact Integer".to_owned();
+        Err(CalcError::ParameterError((n, err)))
+    } else {
+        let to_i32 = v2.to_i32_saturating().ok_or(CalcError::UnknownError)?;
+        v1.jn(to_i32).accuracy(c.max.as_ref())
+    },
+    b"yn" => |v1, v2, c, n| if v1 <= 0.0 || v2.clone().fract() != 0.0 {
+        let err = "Requires Yn Param1 > 0 and Param2 Exact Integer".to_owned();
+        Err(CalcError::ParameterError((n, err)))
+    } else {
+        let to_i32 = v2.to_i32_saturating().ok_or(CalcError::UnknownError)?;
         v1.yn(to_i32).accuracy(c.max.as_ref())
     },
 };
@@ -383,7 +387,7 @@ impl FloatExt for Float {
     fn to_round(&self, digits: Option<usize>) -> Result<String, CalcError> {
         if let Some(precision) = digits {
             if precision < 1 || precision > 10000 {
-                let err = String::from("Set Precision: ≥ 1 or < 10000");
+                let err = String::from("Set Precision: ≥ 1 and < 10000");
                 return Err(CalcError::Custom(err));
             }
         }
