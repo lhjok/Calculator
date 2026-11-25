@@ -736,7 +736,7 @@ impl Calculator {
                         self.marker = Marker::NegSub;
                         self.negstate = NegPos::Record;
                         continue;
-                    } else if !matches!(self.marker, Marker::Number | Marker::RParen | Marker::Const) {
+                    } else if !matches!(self.marker, Marker::Number | Marker::RParen | Marker::Const | Marker::Fact) {
                         return Err(CalcError::ExpressionError(index+1));
                     }
                     if matches!(self.state, State::Operator | State::Initial) {
