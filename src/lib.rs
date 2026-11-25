@@ -381,7 +381,7 @@ impl FloatExt for Float {
             if self > *max || self < *max.as_neg() {
                 return Err(CalcError::BeyondAccuracy);
             }
-        } Ok(self)
+        } return Ok(self);
     }
 
     fn to_round(&self, digits: Option<usize>) -> Result<String, CalcError> {
@@ -646,9 +646,9 @@ impl Calculator {
                     self.numbers.push(value);
                 }
             } else {
-                break;
+                return Ok(());
             }
-        } Ok(())
+        } return Ok(());
     }
 
     fn is_resize_neg(&mut self, target_idx: usize) {
