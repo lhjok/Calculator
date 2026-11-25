@@ -277,7 +277,7 @@ static MATH2: Map<&'static [u8], MathFn2> = phf_map! {
         v1.jn(to_i32).accuracy(c.max.as_ref())
     },
     b"yn" => |v1, v2, c, n| if v1 <= 0.0 || v2.clone().fract() != 0.0 {
-        let err = "Requires Yn Param1 > 0 and Param2 Exact Integer".to_owned();
+        let err = "Yn Requires Param1 > 0 and Param2 Exact Integer".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else {
         let to_i32 = v2.to_i32_saturating().ok_or(CalcError::UnknownError)?;
