@@ -237,7 +237,7 @@ static MATH2: Map<&'static [u8], MathFn2> = phf_map! {
         v1.tan_u(to_u32).accuracy(c.max.as_ref())
     },
     b"gamma_inc" => |v1, v2, c, n| if v1 <= 0.0 || *v2 < 0.0 {
-        let err = "GammaInc Requires Param(1 and 2) v1 > 0 and v2 ≥ 0 ".to_owned();
+        let err = "GammaInc Requires Param1 > 0 and Param2 ≥ 0 ".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v1.gamma_inc(v2).accuracy(c.max.as_ref()) },
     b"remainder" | b"fmod" | b"rem" => |v1, v2, c, n| if *v2 == 0.0 {
