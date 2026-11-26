@@ -1,12 +1,12 @@
-use rug::Float;
-use rug::ops::Pow;
 use std::cmp::max;
 use std::error::Error;
 use std::fmt::{
     Display, Formatter,
     Result as FmtResult,
 };
+use rug::ops::Pow;
 use rug::float::Constant;
+use rug::{ Assign, Float };
 use rug::ops::NegAssign;
 use phf::phf_map;
 use phf::Map;
@@ -94,116 +94,116 @@ impl Display for CalcError {
 impl Error for CalcError {}
 
 /// Type alias for a single-parameter mathematical function.
-type MathFn1 = fn(Float, &Context, usize) -> Result<Float, CalcError>;
+type MathFn1 = fn(Float, &mut Float, &Context, usize) -> Result<Float, CalcError>;
 static MATH1: Map<&'static [u8], MathFn1> = phf_map! {
-    b"ai" => |v, c, _| v.ai().accuracy(c.max.as_ref()),
-    b"li2" => |v, c, _| v.li2().accuracy(c.max.as_ref()),
-    b"erf" => |v, c, _| v.erf().accuracy(c.max.as_ref()),
-    b"erfc" => |v, c, _| v.erfc().accuracy(c.max.as_ref()),
-    b"abs" => |v, c, _| v.abs().accuracy(c.max.as_ref()),
-    b"ln" => |v, c, n| if v <= 0.0 {
+    b"ai" => |v, _, c, _| v.ai().accuracy(c.max.as_ref()),
+    b"li2" => |v, _, c, _| v.li2().accuracy(c.max.as_ref()),
+    b"erf" => |v, _, c, _| v.erf().accuracy(c.max.as_ref()),
+    b"erfc" => |v, _, c, _| v.erfc().accuracy(c.max.as_ref()),
+    b"abs" => |v, _, c, _| v.abs().accuracy(c.max.as_ref()),
+    b"ln" => |v, _, c, n| if v <= 0.0 {
         let err = "Ln Requires Param > 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.ln().accuracy(c.max.as_ref()) },
-    b"exp" => |v, c, _| v.exp().accuracy(c.max.as_ref()),
-    b"exp2" => |v, c, _| v.exp2().accuracy(c.max.as_ref()),
-    b"exp10" => |v, c, _| v.exp10().accuracy(c.max.as_ref()),
-    b"trunc" => |v, c, _| v.trunc().accuracy(c.max.as_ref()),
-    b"zeta" => |v, c, n| if v == 1.0 {
+    b"exp" => |v, _, c, _| v.exp().accuracy(c.max.as_ref()),
+    b"exp2" => |v, _, c, _| v.exp2().accuracy(c.max.as_ref()),
+    b"exp10" => |v, _, c, _| v.exp10().accuracy(c.max.as_ref()),
+    b"trunc" => |v, _, c, _| v.trunc().accuracy(c.max.as_ref()),
+    b"zeta" => |v, _, c, n| if v == 1.0 {
         let err = "Zeta Requires Param ≠ 1".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.zeta().accuracy(c.max.as_ref()) },
-    b"gamma" => |v, c, n| if v <= 0.0 && v.clone().fract() == 0.0 {
+    b"gamma" => |v, f, c, n| if v <= 0.0 && is_integer(&v, f) {
         let err = "Gamma Requires Param > 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.gamma().accuracy(c.max.as_ref()) },
-    b"digamma" => |v, c, n| if v <= 0.0 && v.clone().fract() == 0.0 {
+    b"digamma" => |v, f, c, n| if v <= 0.0 && is_integer(&v, f) {
         let err = "DiGamma Requires Param > 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.digamma().accuracy(c.max.as_ref()) },
-    b"eint" => |v, c, n| if v == 0.0 {
+    b"eint" => |v, _, c, n| if v == 0.0 {
         let err = "Eint Requires Param ≠ 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.eint().accuracy(c.max.as_ref()) },
-    b"log2" => |v, c, n| if v <= 0.0 {
+    b"log2" => |v, _, c, n| if v <= 0.0 {
         let err = "Log2 Requires Param > 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.log2().accuracy(c.max.as_ref()) },
-    b"log10" => |v, c, n| if v <= 0.0 {
+    b"log10" => |v, _, c, n| if v <= 0.0 {
         let err = "Log10 Requires Param > 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.log10().accuracy(c.max.as_ref()) },
-    b"cos" => |v, c, _| v.cos().accuracy(c.max.as_ref()),
-    b"sin" => |v, c, _| v.sin().accuracy(c.max.as_ref()),
-    b"tan" => |v, c, _| v.tan().accuracy(c.max.as_ref()),
-    b"sec" => |v, c, _| v.sec().accuracy(c.max.as_ref()),
-    b"csc" => |v, c, n| if v == 0.0 {
+    b"cos" => |v, _, c, _| v.cos().accuracy(c.max.as_ref()),
+    b"sin" => |v, _, c, _| v.sin().accuracy(c.max.as_ref()),
+    b"tan" => |v, _, c, _| v.tan().accuracy(c.max.as_ref()),
+    b"sec" => |v, _, c, _| v.sec().accuracy(c.max.as_ref()),
+    b"csc" => |v, _, c, n| if v == 0.0 {
         let err = "Csc Requires Param ≠ 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.csc().accuracy(c.max.as_ref()) },
-    b"cot" => |v, c, n| if v == 0.0 {
+    b"cot" => |v, _, c, n| if v == 0.0 {
         let err = "Cot Requires Param ≠ 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.cot().accuracy(c.max.as_ref()) },
-    b"cosh" => |v, c, _| v.cosh().accuracy(c.max.as_ref()),
-    b"sinh" => |v, c, _| v.sinh().accuracy(c.max.as_ref()),
-    b"tanh" => |v, c, _| v.tanh().accuracy(c.max.as_ref()),
-    b"ceil" => |v, c, _| v.ceil().accuracy(c.max.as_ref()),
-    b"signum" => |v, c, _| v.signum().accuracy(c.max.as_ref()),
-    b"floor" => |v, c, _| v.floor().accuracy(c.max.as_ref()),
-    b"fract" => |v, c, _| v.fract().accuracy(c.max.as_ref()),
-    b"ln_gamma" => |v, c, n| if v <= 0.0 {
+    b"cosh" => |v, _, c, _| v.cosh().accuracy(c.max.as_ref()),
+    b"sinh" => |v, _, c, _| v.sinh().accuracy(c.max.as_ref()),
+    b"tanh" => |v, _, c, _| v.tanh().accuracy(c.max.as_ref()),
+    b"ceil" => |v, _, c, _| v.ceil().accuracy(c.max.as_ref()),
+    b"signum" => |v, _, c, _| v.signum().accuracy(c.max.as_ref()),
+    b"floor" => |v, _, c, _| v.floor().accuracy(c.max.as_ref()),
+    b"fract" => |v, _, c, _| v.fract().accuracy(c.max.as_ref()),
+    b"ln_gamma" => |v, _, c, n| if v <= 0.0 {
         let err = "LnGamma Requires Param > 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.ln_gamma().accuracy(c.max.as_ref()) },
-    b"j0" => |v, c, _| v.j0().accuracy(c.max.as_ref()),
-    b"j1" => |v, c, _| v.j1().accuracy(c.max.as_ref()),
-    b"y0" => |v, c, n| if v <= 0.0 {
+    b"j0" => |v, _, c, _| v.j0().accuracy(c.max.as_ref()),
+    b"j1" => |v, _, c, _| v.j1().accuracy(c.max.as_ref()),
+    b"y0" => |v, _, c, n| if v <= 0.0 {
         let err = "Y0 Requires Param > 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.y0().accuracy(c.max.as_ref()) },
-    b"y1" => |v, c, n| if v <= 0.0 {
+    b"y1" => |v, _, c, n| if v <= 0.0 {
         let err = "Y1 Requires Param > 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.y1().accuracy(c.max.as_ref()) },
-    b"square" => |v, c, _| v.square().accuracy(c.max.as_ref()),
-    b"recip" => |v, c, n| if v == 0.0 {
+    b"square" => |v, _, c, _| v.square().accuracy(c.max.as_ref()),
+    b"recip" => |v, _, c, n| if v == 0.0 {
         let err = "Recip Requires Param ≠ 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.recip().accuracy(c.max.as_ref()) },
-    b"csch" => |v, c, n| if v == 0.0 {
+    b"csch" => |v, _, c, n| if v == 0.0 {
         let err = "Csch Requires Param ≠ 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.csch().accuracy(c.max.as_ref()) },
-    b"sech" => |v, c, _| v.sech().accuracy(c.max.as_ref()),
-    b"coth" => |v, c, n| if v == 0.0 {
+    b"sech" => |v, _, c, _| v.sech().accuracy(c.max.as_ref()),
+    b"coth" => |v, _, c, n| if v == 0.0 {
         let err = "Coth Requires Param ≠ 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.coth().accuracy(c.max.as_ref()) },
-    b"acos" => |v, c, n| if v < -1.0 || v > 1.0 {
+    b"acos" => |v, _, c, n| if v < -1.0 || v > 1.0 {
         let err = "Acos Requires Param ≥ -1 and ≤ 1".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.acos().accuracy(c.max.as_ref()) },
-    b"asin" => |v, c, n| if v < -1.0 || v > 1.0 {
+    b"asin" => |v, _, c, n| if v < -1.0 || v > 1.0 {
         let err = "Asin Requires Param ≥ -1 and ≤ 1".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.asin().accuracy(c.max.as_ref()) },
-    b"atan" => |v, c, _| v.atan().accuracy(c.max.as_ref()),
-    b"acosh" => |v, c, n| if v < 1.0 {
+    b"atan" => |v, _, c, _| v.atan().accuracy(c.max.as_ref()),
+    b"acosh" => |v, _, c, n| if v < 1.0 {
         let err = "Acosh Requires Param ≥ 1".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.acosh().accuracy(c.max.as_ref()) },
-    b"asinh" => |v, c, _| v.asinh().accuracy(c.max.as_ref()),
-    b"atanh" => |v, c, n| if v <= -1.0 || v >= 1.0 {
+    b"asinh" => |v, _, c, _| v.asinh().accuracy(c.max.as_ref()),
+    b"atanh" => |v, _, c, n| if v <= -1.0 || v >= 1.0 {
         let err = "Atanh Requires Param > -1 and < 1".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.atanh().accuracy(c.max.as_ref()) },
-    b"cbrt" => |v, c, _| v.cbrt().accuracy(c.max.as_ref()),
-    b"sqrt" => |v, c, n| if v < 0.0 {
+    b"cbrt" => |v, _, c, _| v.cbrt().accuracy(c.max.as_ref()),
+    b"sqrt" => |v, _, c, n| if v < 0.0 {
         let err = "Sqrt Requires Param ≥ 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v.sqrt().accuracy(c.max.as_ref()) },
-    b"fac" => |v, c, n| if v < 0.0 || v.clone().fract() != 0.0 {
+    b"fac" => |v, f, c, n| if v < 0.0 || !is_integer(&v, f) {
         let err = "Factorial Requires Param Non-negative Integer".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else {
@@ -220,63 +220,63 @@ static MATH1: Map<&'static [u8], MathFn1> = phf_map! {
 };
 
 /// Type alias for a two-parameter mathematical function.
-type MathFn2 = fn(Float, &Float, &Context, usize) -> Result<Float, CalcError>;
+type MathFn2 = fn(Float, &Float, &mut Float, &Context, usize) -> Result<Float, CalcError>;
 static MATH2: Map<&'static [u8], MathFn2> = phf_map! {
-    b"sinu" => |v1, v2, c, n| if *v2 < 0.0 || v2.clone().fract() != 0.0 {
+    b"sinu" => |v1, v2, f, c, n| if *v2 < 0.0 || !is_integer(&v2, f) {
         let err = "SinU Requires Param2 Non-negative Integer".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else {
         let to_u32 = v2.to_u32_saturating().ok_or(CalcError::UnknownError)?;
         v1.sin_u(to_u32).accuracy(c.max.as_ref())
     },
-    b"tanu" => |v1, v2, c, n| if *v2 < 0.0 || v2.clone().fract() != 0.0 {
+    b"tanu" => |v1, v2, f, c, n| if *v2 < 0.0 || !is_integer(&v2, f) {
         let err = "TanU Requires Param2 Non-negative Integer".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else {
         let to_u32 = v2.to_u32_saturating().ok_or(CalcError::UnknownError)?;
         v1.tan_u(to_u32).accuracy(c.max.as_ref())
     },
-    b"gamma_inc" => |v1, v2, c, n| if v1 <= 0.0 || *v2 < 0.0 {
-        let err = "GammaInc Requires Param1 > 0 and Param2 ≥ 0 ".to_owned();
+    b"gamma_inc" => |v1, v2, _, c, n| if v1 <= 0.0 || *v2 < 0.0 {
+        let err = "GammaInc Requires Param1 > 0 and Param2 ≥ 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v1.gamma_inc(v2).accuracy(c.max.as_ref()) },
-    b"remainder" | b"fmod" | b"rem" => |v1, v2, c, n| if *v2 == 0.0 {
+    b"remainder" | b"fmod" | b"rem" => |v1, v2, _, c, n| if *v2 == 0.0 {
         let err = "Remainder Requires Param2 ≠ 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v1.remainder(v2).accuracy(c.max.as_ref()) },
-    b"agm" => |v1, v2, c, n| if v1 < 0.0 || *v2 < 0.0 {
+    b"agm" => |v1, v2, _, c, n| if v1 < 0.0 || *v2 < 0.0 {
         let err = "Agm Requires Param(1 and 2) ≥ 0".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else { v1.agm(v2).accuracy(c.max.as_ref()) },
-    b"max" => |v1, v2, c, _| v1.max(v2).accuracy(c.max.as_ref()),
-    b"min" => |v1, v2, c, _| v1.min(v2).accuracy(c.max.as_ref()),
-    b"atan2" => |v1, v2, c, _| v1.atan2(v2).accuracy(c.max.as_ref()),
-    b"positive_diff" => |v1, v2, c, _| v1.positive_diff(v2).accuracy(c.max.as_ref()),
-    b"copysign" => |v1, v2, c, _| v1.copysign(v2).accuracy(c.max.as_ref()),
-    b"hypot" => |v1, v2, c, _| v1.hypot(v2).accuracy(c.max.as_ref()),
-    b"pow" => |v1, v2, c, _| v1.pow(v2).accuracy(c.max.as_ref()),
-    b"root" => |v1, v2, c, n| if *v2 <= 0.0 || v2.clone().fract() != 0.0 {
+    b"max" => |v1, v2, _, c, _| v1.max(v2).accuracy(c.max.as_ref()),
+    b"min" => |v1, v2, _, c, _| v1.min(v2).accuracy(c.max.as_ref()),
+    b"atan2" => |v1, v2, _, c, _| v1.atan2(v2).accuracy(c.max.as_ref()),
+    b"positive_diff" => |v1, v2, _, c, _| v1.positive_diff(v2).accuracy(c.max.as_ref()),
+    b"copysign" => |v1, v2, _, c, _| v1.copysign(v2).accuracy(c.max.as_ref()),
+    b"hypot" => |v1, v2, _, c, _| v1.hypot(v2).accuracy(c.max.as_ref()),
+    b"pow" => |v1, v2, _, c, _| v1.pow(v2).accuracy(c.max.as_ref()),
+    b"root" => |v1, v2, f, c, n| if *v2 <= 0.0 || !is_integer(&v2, f) {
         let err = "Root Requires Param2 > 0 and Non-negative Integer".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else {
         let to_u32 = v2.to_u32_saturating().ok_or(CalcError::UnknownError)?;
         v1.root(to_u32).accuracy(c.max.as_ref())
     },
-    b"rooti" => |v1, v2, c, n| if *v2 == 0.0 || v2.clone().fract() != 0.0 {
+    b"rooti" => |v1, v2, f, c, n| if *v2 == 0.0 || !is_integer(&v2, f) {
         let err = "RootI Requires Param2 ≠ 0 and Exact Integer".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else {
         let to_i32 = v2.to_i32_saturating().ok_or(CalcError::UnknownError)?;
         v1.root_i(to_i32).accuracy(c.max.as_ref())
     },
-    b"jn" => |v1, v2, c, n| if v2.clone().fract() != 0.0 {
+    b"jn" => |v1, v2, f, c, n| if !is_integer(&v2, f) {
         let err = "Jn Requires Param2 Exact Integer".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else {
         let to_i32 = v2.to_i32_saturating().ok_or(CalcError::UnknownError)?;
         v1.jn(to_i32).accuracy(c.max.as_ref())
     },
-    b"yn" => |v1, v2, c, n| if v1 <= 0.0 || v2.clone().fract() != 0.0 {
+    b"yn" => |v1, v2, f, c, n| if v1 <= 0.0 || !is_integer(&v2, f) {
         let err = "Yn Requires Param1 > 0 and Param2 Exact Integer".to_owned();
         Err(CalcError::ParameterError((n, err)))
     } else {
@@ -304,6 +304,11 @@ pub struct Calculator {
     bracket: usize,
     filter: bool,
     state: State,
+}
+
+fn is_integer(v: &Float, scratch: &mut Float) -> bool {
+    scratch.assign(v.fract_ref());
+    scratch.is_zero()
 }
 
 fn max_value(prec: u32) -> Float {
@@ -690,6 +695,7 @@ impl Calculator {
 
     fn parse(&mut self, bytes: &[u8]) -> Result<Float, CalcError> {
         let mut locat: usize = 0;
+        let mut scratch = Float::new(self.context.prec);
         for (index, &valid) in bytes.iter().enumerate() {
             match valid {
                 b'0'..=b'9' | b'.' => {
@@ -783,10 +789,10 @@ impl Calculator {
                     let func = MATH1.get(b"fac").unwrap();
                     if matches!(self.marker, Marker::Number) {
                         let value = extract(bytes, &self.context, locat, index)?;
-                        self.numbers.push(func(value, &self.context, index)?);
+                        self.numbers.push(func(value, &mut scratch, &self.context, index)?);
                     } else if matches!(self.marker, Marker::RParen | Marker::Const) {
                         let value = self.numbers.pop().ok_or(CalcError::StackError)?;
-                        self.numbers.push(func(value, &self.context, index)?);
+                        self.numbers.push(func(value, &mut scratch, &self.context, index)?);
                     } else {
                         return Err(CalcError::ExpressionError(index+1));
                     }
@@ -861,7 +867,7 @@ impl Calculator {
                             if let Some(func) = self.function[self.bracket].0.take() {
                                 if self.parameter[self.bracket] == Some(1) {
                                     let value = self.numbers.pop().ok_or(CalcError::StackError)?;
-                                    let mut func_val = func(value, &self.context, index)?;
+                                    let mut func_val = func(value, &mut scratch, &self.context, index)?;
                                     self.apply_unary_minus(&mut func_val);
                                     self.parameter[self.bracket] = None;
                                     self.numbers.push(func_val);
@@ -873,7 +879,7 @@ impl Calculator {
                                 if self.parameter[self.bracket] == Some(2) {
                                     let value2 = self.numbers.pop().ok_or(CalcError::StackError)?;
                                     let value1 = self.numbers.pop().ok_or(CalcError::StackError)?;
-                                    let mut func_val = func(value1, &value2, &self.context, index)?;
+                                    let mut func_val = func(value1, &value2, &mut scratch, &self.context, index)?;
                                     self.apply_unary_minus(&mut func_val);
                                     self.parameter[self.bracket] = None;
                                     self.numbers.push(func_val);
