@@ -494,9 +494,10 @@ impl StringExt for String {
 
     fn to_fixed_round(&self, prec: i32) -> Result<String, CalcError> {
         let (negative, digits, exp) = self.parse_rug_raw();
+        let d_len = digits.len();
         let round_pos = exp + prec;
         let round_idx = round_pos as usize;
-        let carry = if round_pos >= 0 && round_idx < digits.len() {
+        let carry = if round_pos >= 0 && round_idx < d_len {
             digits[round_idx] >= b'5' } else { false };
         let max_bound = round_pos - 1;
         let min_bound = std::cmp::min(0, exp-1);
@@ -511,10 +512,9 @@ impl StringExt for String {
                 buf[cursor] = b'.';
                 cursor -= 1;
             }
-            let index = index as usize;
-            let mut digit = if index < digits.len() {
-                digits[index]
-            } else { b'0' };
+            let idx = index as usize;
+            let mut digit = if index >= 0 && idx < d_len {
+                digits[idx] } else { b'0' };
             if carry {
                 if digit == b'9' {
                     digit = b'0';
