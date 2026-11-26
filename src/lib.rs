@@ -497,7 +497,7 @@ impl StringExt for String {
         let d_len = digits.len();
         let round_pos = exp + prec;
         let round_idx = round_pos as usize;
-        let carry = if round_pos >= 0 && round_idx < d_len {
+        let mut carry = if round_pos >= 0 && round_idx < d_len {
             digits[round_idx] >= b'5' } else { false };
         let max_bound = round_pos - 1;
         let min_bound = std::cmp::min(0, exp-1);
