@@ -431,11 +431,10 @@ impl StringExt for String {
         let (negative, digits, exp) = self.parse_rug_raw();
         let digits_len = digits.len();
         let exp_abs = (exp.unsigned_abs()+2) as usize;
-        let capacity = digits_len + exp_abs;
-        if exp.abs() > 10000 || capacity > 65536 {
-            return Err(CalcError::BeyondAccuracy);
-        }
+        if exp_abs > 10000 || digits_len > 65536 {
+            return Err(CalcError::BeyondAccuracy); }
         let mut cursor = 0;
+        let capacity = digits_len + exp_abs;
         let mut buf = vec![b'0'; capacity];
         if negative {
             buf[cursor] = b'-';
@@ -494,17 +493,15 @@ impl StringExt for String {
 
     fn to_fixed_round(&self, prec: i32) -> Result<String, CalcError> {
         let (negative, digits, exp) = self.parse_rug_raw();
-        let d_len = digits.len();
+        if exp.abs() > 10000 || digits.len() > 65536 {
+            return Err(CalcError::BeyondAccuracy); }
         let round_pos = exp + prec;
         let round_idx = round_pos as usize;
-        let mut carry = if round_pos >= 0 && round_idx < d_len {
+        let mut carry = if round_pos >= 0 && round_idx < digits.len() {
             digits[round_idx] >= b'5' } else { false };
         let max_bound = round_pos - 1;
         let min_bound = std::cmp::min(0, exp-1);
         let capacity = ((max_bound-min_bound).max(0) as usize) + 9;
-        if exp.abs() > 10000 || capacity > 65536 {
-            return Err(CalcError::BeyondAccuracy);
-        }
         let mut buf = vec![b'0'; capacity];
         let mut cursor = capacity - 1;
         for index in (min_bound..=max_bound).rev() {
@@ -513,7 +510,7 @@ impl StringExt for String {
                 cursor -= 1;
             }
             let idx = index as usize;
-            let mut digit = if index >= 0 && idx < d_len {
+            let mut digit = if index >= 0 && idx < digits.len() {
                 digits[idx] } else { b'0' };
             if carry {
                 if digit == b'9' {
