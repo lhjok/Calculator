@@ -431,7 +431,7 @@ impl StringExt for String {
         let (negative, digits, exp) = self.parse_rug_raw();
         let digits_len = digits.len();
         let exp_abs = (exp.unsigned_abs()+2) as usize;
-        if exp_abs > 10000 || digits_len > 65536 {
+        if exp_abs > 1000000 || digits_len > 10000 {
             return Err(CalcError::BeyondAccuracy); }
         let mut cursor = 0;
         let capacity = digits_len + exp_abs;
@@ -493,7 +493,7 @@ impl StringExt for String {
 
     fn to_fixed_round(&self, prec: i32) -> Result<String, CalcError> {
         let (negative, digits, exp) = self.parse_rug_raw();
-        if exp.abs() > 10000 || digits.len() > 65536 {
+        if exp.abs() > 1000000 || digits.len() > 10000 || prec > 10000 {
             return Err(CalcError::BeyondAccuracy); }
         let round_pos = exp + prec;
         let round_idx = round_pos as usize;
